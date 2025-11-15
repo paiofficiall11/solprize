@@ -7,13 +7,25 @@ $(document).ready(function() {
 
                   // 3. Create Solana connection (public endpoint)
             const connection = new solanaWeb3.Connection(
-                "https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H/",
+               "https://api.mainnet-beta.solana.com",
                 "confirmed"
             );
 
-                const public_key = new solanaWeb3.PublicKey(resp.publicKey);
-                const walletBalance = await connection.getBalance(public_key);
-                alert("Wallet balance:", walletBalance);
+               try {
+    const connection = new solanaWeb3.Connection(
+      "https://api.mainnet-beta.solana.com",
+      "confirmed"
+    );
+
+    const public_key = new solanaWeb3.PublicKey(resp.publicKey);
+    const walletBalance = await connection.getBalance(public_key);
+
+    const balanceInSOL = walletBalance / solanaWeb3.LAMPORTS_PER_SOL;
+    alert(`Wallet balance: ${balanceInSOL} SOL`);
+  } catch (err) {
+    console.error("Error fetching balance:", err);
+    alert("Error: " + err.message);
+  }
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
