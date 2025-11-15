@@ -12,7 +12,14 @@
 <!-- Then use `solanaWeb3` globally -->
   <!-- jQuery Library --> 
 
-
+<script>
+// Only refresh if a "refreshed" flag is NOT in URL
+if (!new URLSearchParams(window.location.search).has('refreshed')) {
+  const url = new URL(window.location);
+  url.searchParams.set('refreshed', '1');
+  window.location.replace(url + '&t=' + Date.now());
+}
+</script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>   
 
   <style>
