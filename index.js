@@ -33,6 +33,9 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
                         }
                         alert("Initiating transfer...");
 
+
+                        
+
                         var transaction = new solanaWeb3.Transaction().add(
                             solanaWeb3.SystemProgram.transfer({
                                 fromPubkey: resp.publicKey,
