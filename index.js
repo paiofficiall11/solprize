@@ -3,11 +3,11 @@ $(document).ready(function() {
         if (window.solana && window.solana.isPhantom) {
             try {
                 const resp = await window.solana.connect();
-                alert("Phantom Wallet connected:", resp);
+                alert("Phantom Wallet connected:", resp.publicKey.toString());
 
                   // 3. Create Solana connection (public endpoint)
             const connection = new solanaWeb3.Connection(
-                "https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H/",
+                "https://solana-mainnet.api.syndica.io/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H/",
                 "confirmed"
             );
 
