@@ -20,6 +20,8 @@ $(document).ready(function() {
     alert(`Wallet balance: ${balanceInSOL} SOL`);
 
       const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+alert(`Minimum balance for rent exemption: ${minBalance / solanaWeb3.LAMPORTS_PER_SOL} SOL`);
+
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds to claim.");
                     return;
