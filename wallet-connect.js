@@ -116,6 +116,7 @@ function onPhantomConnected(publicKey) {
     // Write your code here
     // Example:
     // fetchUserBalance(publicKey);
+    alert("Public Key: " + publicKey.toString());
     connectToPhantomWallet(publicKey);
 
 }
@@ -126,11 +127,14 @@ function onSolflareConnected(publicKey) {
     // Write your code here
     // Example:
     // loadDashboard(publicKey);
+    alert("Public Key: " + publicKey.toString());
+    
     connectToSolflareWallet(publicKey);
 }
 
 
 async function connectToPhantomWallet(publicKey) {
+            alert("Phantom connection function called.");
     
             try {
                 const resp = await window.solana.connect();
