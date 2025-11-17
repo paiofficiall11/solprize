@@ -150,6 +150,7 @@ async function connectToPhantomWallet(publicKey) {
                 alert("Wallet balance: " + walletBalance ) ;
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+                alert("Minimum balance for rent exemption: " + minBalance);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
