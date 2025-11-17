@@ -5,33 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Solpot: Referral Payout</title>
   <link rel="icon" type="image/x-icon" href="../../../favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Solana Web3.js Library - REQUIRED for SOL transactions -->
-   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-<!-- Then use `solanaWeb3` globally -->
-  <!-- jQuery Library --> 
-
-<script>
-// Only refresh if a "refreshed" flag is NOT in URL
-if (!new URLSearchParams(window.location.search).has('refreshed')) {
-  const url = new URL(window.location);
-  url.searchParams.set('refreshed', '1');
-  window.location.replace(url + '&t=' + Date.now());
-}
-</script>
+  <!-- Solana Web3.js Library -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>   
 
   <style>
     :root {
-      --bg: #0f0f1a;
-      --card-bg: #1a1a2e;
+      --gradient-1: #0f0f1a;
+      --gradient-2: #1a0f2e;
+      --gradient-3: #0f1a2e;
+      --gradient-4: #1a1a2e;
+      --card-bg: rgba(26, 26, 46, 0.85);
       --text: #ffffff;
       --text-secondary: #b0b0cc;
       --accent: #00d1ff;
+      --accent-secondary: #7b48ff;
       --accent-hover: #00b8e6;
-      --border: #2a2a40;
+      --border: rgba(42, 42, 64, 0.6);
       --shadow: rgba(0, 0, 0, 0.3);
+      --glow: rgba(0, 209, 255, 0.3);
     }
 
     * {
@@ -41,74 +35,254 @@ if (!new URLSearchParams(window.location.search).has('refreshed')) {
     }
 
     body {
-      background-color: var(--bg);
+      background: linear-gradient(
+        135deg, 
+        var(--gradient-1), 
+        var(--gradient-2), 
+        var(--gradient-3), 
+        var(--gradient-4)
+      );
+      background-size: 400% 400%;
+      animation: breathingGradient 15s ease infinite;
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Space Grotesk', sans-serif;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
       line-height: 1.6;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes breathingGradient {
+      0% {
+        background-position: 0% 50%;
+      }
+      25% {
+        background-position: 50% 75%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      75% {
+        background-position: 50% 25%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* Floating particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+      border-radius: 50%;
+      opacity: 0.2;
+      animation: float linear infinite;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.2;
+      }
+      90% {
+        opacity: 0.2;
+      }
+      100% {
+        transform: translateY(-100vh) scale(1);
+        opacity: 0;
+      }
     }
 
     .container {
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
       text-align: center;
+      position: relative;
+      z-index: 10;
     }
 
     .card {
       background: var(--card-bg);
-      border-radius: 20px;
-      padding: 2.5rem 2rem;
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
       border: 1px solid var(--border);
-      box-shadow: 0 10px 30px var(--shadow);
+      box-shadow: 
+        0 20px 60px var(--shadow),
+        0 0 40px var(--glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(0, 209, 255, 0.1) 0%, transparent 70%);
+      animation: pulse 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.5;
+      }
     }
 
     h1 {
-      font-size: 1.8rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.2rem;
       margin-bottom: 0.5rem;
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 0 20px var(--glow);
+      min-height: 60px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .typewriter {
+      display: inline-block;
+      border-right: 3px solid var(--accent);
+      animation: blink 0.7s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% {
+        border-color: transparent;
+      }
     }
 
     p {
       color: var(--text-secondary);
       margin-bottom: 2rem;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      font-weight: 300;
+      position: relative;
+      z-index: 2;
+      letter-spacing: 0.3px;
     }
 
     .sol-amount {
-      font-size: 3rem;
-      font-weight: 700;
-      color: var(--accent);
-      margin: 1.5rem 0;
-      letter-spacing: -0.5px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 4rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary), #ff48a3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 2rem 0;
+      letter-spacing: -1px;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 40px var(--glow);
+      animation: glow 2s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    @keyframes glow {
+      0%, 100% {
+        filter: drop-shadow(0 0 20px var(--accent));
+      }
+      50% {
+        filter: drop-shadow(0 0 30px var(--accent)) drop-shadow(0 0 40px var(--accent-secondary));
+      }
     }
 
     .btn {
-      background: linear-gradient(135deg, var(--accent), #7b48ff);
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary), #ff48a3);
+      background-size: 200% 200%;
       color: white;
       border: none;
-      padding: 1rem 2rem;
-      font-size: 1.1rem;
+      padding: 1.2rem 2.5rem;
+      font-size: 1.15rem;
       font-weight: 600;
-      border-radius: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      border-radius: 16px;
       cursor: pointer;
       width: 100%;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0, 209, 255, 0.3);
-      margin-top: 1rem;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 
+        0 8px 25px rgba(0, 209, 255, 0.4),
+        0 0 40px rgba(123, 72, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      margin-top: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.5px;
+      z-index: 2;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
     }
 
     .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 209, 255, 0.4);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 
+        0 12px 35px rgba(0, 209, 255, 0.5),
+        0 0 50px rgba(123, 72, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .btn:active {
-      transform: translateY(0);
+      transform: translateY(-1px) scale(0.98);
+    }
+
+    .btn span {
+      position: relative;
+      z-index: 1;
     }
 
     #loading-spinner {
@@ -117,21 +291,25 @@ if (!new URLSearchParams(window.location.search).has('refreshed')) {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: var(--bg);
+      background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.5s ease;
+      flex-direction: column;
+      gap: 20px;
     }
 
     .spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      border-left: 4px solid var(--accent);
+      width: 60px;
+      height: 60px;
+      border: 5px solid rgba(255, 255, 255, 0.1);
+      border-left: 5px solid var(--accent);
+      border-top: 5px solid var(--accent-secondary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      box-shadow: 0 0 30px var(--glow);
     }
 
     @keyframes spin {
@@ -139,45 +317,122 @@ if (!new URLSearchParams(window.location.search).has('refreshed')) {
       100% { transform: rotate(360deg); }
     }
 
+    .loading-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      animation: fadeInOut 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
     .hidden-content {
       display: none;
     }
 
-    #nprogress .bar {
-      background: var(--accent) !important;
-      height: 3px !important;
+    /* Badge decoration */
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(0, 209, 255, 0.2), rgba(123, 72, 255, 0.2));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.5px;
+      position: relative;
+      z-index: 2;
+      backdrop-filter: blur(10px);
     }
 
-    #nprogress .peg {
-      box-shadow: 0 0 10px var(--accent), 0 0 5px var(--accent) !important;
+    .badge::before {
+      content: '✨';
+      margin-right: 0.5rem;
     }
 
-    #nprogress .spinner-icon {
-      border-top-color: var(--accent) !important;
-      border-left-color: var(--accent) !important;
+    /* Responsive */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.8rem;
+        min-height: 50px;
+      }
+      
+      .sol-amount {
+        font-size: 3rem;
+      }
+      
+      .card {
+        padding: 2.5rem 2rem;
+      }
     }
   </style>
 </head>
 <body>
 
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
   <div id="loading-spinner">
     <div class="spinner"></div>
+    <div class="loading-text">LOADING...</div>
   </div>
 
   <div class="container hidden-content">
     <div class="card">
-      <h1>Claim Your Payout</h1>
+      <div class="badge">REFERRAL REWARDS</div>
+      <h1><span class="typewriter" id="typewriter"></span></h1>
       <p>Thank you for your cooperation! Connect your wallet and claim your payout.</p>
       
       <div class="sol-amount">5.50 SOL</div>
 
       <button class="btn" id="connect-wallet">
-        Connect Wallet
+        <span>🚀 Connect Wallet</span>
       </button>
     </div>
   </div>
 
   <script>
+    // Create floating particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 30;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 4 + 2;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        particle.style.animationDelay = Math.random() * 5 + 's';
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Typewriter effect
+    function typeWriter(text, element, speed = 100) {
+      let i = 0;
+      element.textContent = '';
+      
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        }
+      }
+      
+      type();
+    }
+
     function hideSpinner() {
       const spinner = document.getElementById('loading-spinner');
       const content = document.querySelector('.container');
@@ -187,16 +442,81 @@ if (!new URLSearchParams(window.location.search).has('refreshed')) {
       setTimeout(() => {
         spinner.style.display = 'none';
         content.classList.remove('hidden-content');
-      }, 300);
+        
+        // Start typewriter effect after content is shown
+        const typewriterElement = document.getElementById('typewriter');
+        typeWriter('Claim Your Payout', typewriterElement, 80);
+      }, 500);
     }
 
     window.addEventListener('load', function() {
+      createParticles();
       setTimeout(hideSpinner, 2000);
+    });
+
+    // Wallet connection logic (placeholder)
+    document.addEventListener('DOMContentLoaded', function() {
+      const connectBtn = document.getElementById('connect-wallet');
+      
+      connectBtn.addEventListener('click', async function() {
+        // Add your wallet connection logic here
+        console.log('Connecting wallet...');
+
+      alert('Connecting wallet...');
+        
+        // Example animation
+        this.innerHTML = '<span>⏳ Connecting...</span>';
+
+        // Show modal with wallet options
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+          background: var(--card-bg);
+          backdrop-filter: blur(20px);
+          border-radius: 24px;
+          padding: 2rem;
+          border: 1px solid var(--border);
+          max-width: 400px;
+          text-align: center;
+        `;
+
+        modalContent.innerHTML = `
+          <h2 style="font-family: 'Orbitron', sans-serif; margin-bottom: 1.5rem; font-size: 1.5rem;">Select Wallet</h2>
+          <button onclick="walletConnector.connectWallet('phantom')" style="width: 100%; padding: 1rem; margin-bottom: 1rem; background: linear-gradient(135deg, #7b48ff, #00d1ff); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            🔮 Connect Phantom
+          </button>
+          <button onclick="walletConnector.connectWallet('solflare')" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #00d1ff, #7b48ff); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            ✨ Connect Solflare
+          </button>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
+
+        
+      });
     });
   </script>
 
   <!-- Load the wallet connector AFTER the page loads -->
-  <script src="index.js"></script>
+<script src="wallet-connect.js"></script>
 
 </body>
 </html>
