@@ -1,171 +1,146 @@
 /**
- * ULTIMATE Binance Web3 Wallet Connector
- * Multi-strategy approach with WalletConnect support
- * @param {string} dappUrl - Optional dApp URL to load
- * @param {Object} options - Configuration options
+ * OFFICIAL Binance Web3 Wallet Deep Link Connector
+ * Based on Binance's official @binance/w3w-utils package API
+ * Implements proper deep linking as per Binance documentation
+ * @param {string} dappUrl - Your dApp URL to open in Binance Web3 Wallet
+ * @param {number} chainId - Optional default chain ID (e.g., 56 for BSC, 1 for Ethereum)
  */
-async function connectBinanceWeb3(dappUrl = '', options = {}) {
-  alert("Attempting Binance Web3 Wallet connection...");
-  const config = {
-    enableWalletConnect: true,
-    showDebugToasts: false,
-    timeout: 3000,
-    ...options
-  };
-
-  // ==================== ENHANCED MOBILE DETECTION ====================
+async function connectBinanceWeb3(dappUrl = '', chainId = null) {
+  
+  // ==================== DEVICE DETECTION ====================
   const detectDevice = () => {
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
     
     return {
       isIOS: /iPad|iPhone|iPod/.test(ua) && !window.MSStream,
       isAndroid: /android/i.test(ua),
       isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua),
-      isInAppBrowser: /FBAN|FBAV|Instagram|Twitter|Line|WeChat|Telegram|Snapchat|TikTok|LinkedIn|Reddit|Discord|Pinterest/i.test(ua),
-      isSafari: /^((?!chrome|android).)*safari/i.test(ua),
-      isChrome: /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor),
-      isPWA: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true,
-      iOSVersion: (() => {
-        const match = ua.match(/OS (\d+)_(\d+)_?(\d+)?/);
-        return match ? parseInt(match[1], 10) : 0;
-      })(),
-      androidVersion: (() => {
-        const match = ua.match(/Android (\d+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1]) : 0;
-      })()
+      isInAppBrowser: /FBAN|FBAV|Instagram|Twitter|Line|WeChat|Telegram|Snapchat|TikTok|LinkedIn|Discord/i.test(ua),
+      isBinanceApp: typeof window.binancew3w !== 'undefined' || window.ethereum?.isBinance === true,
+      hasTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0
     };
   };
 
   const device = detectDevice();
 
+  // ==================== CHECK IF ALREADY IN BINANCE ====================
+  // Based on official documentation: window.ethereum.isBinance
+  if (device.isBinanceApp) {
+    showNotification('✅ Already Connected', 'You are in Binance Web3 Wallet');
+    
+    // If dApp URL provided and we're in Binance, try to navigate to it
+    if (dappUrl && dappUrl.trim()) {
+      try {
+        window.location.href = dappUrl.trim();
+      } catch (e) {
+        console.error('Navigation error:', e);
+      }
+    }
+    return true;
+  }
+
+  // Block non-mobile
   if (!device.isMobile) {
-    showNotification('⚠️ Mobile Required', 'Please open on your mobile device');
+    showNotification('📱 Mobile Required', 'Open this page on your mobile device');
     return false;
   }
 
-  // ==================== DEEP LINK GENERATION ====================
-  const generateDeepLinks = () => {
-    const base = dappUrl ? dappUrl.trim() : '';
-    const encoded = encodeURIComponent(base);
+  // ==================== GENERATE OFFICIAL DEEP LINKS ====================
+  // Based on Binance's official getDeeplink() API
+  const generateOfficialDeepLinks = () => {
+    const url = dappUrl?.trim() || '';
+    const encoded = encodeURIComponent(url);
     
+    // Official format from @binance/w3w-utils
     const links = {
-      // iOS Universal Links (iOS 9+)
-      iosUniversal: base 
+      // Official Universal Links (HTTP) - Most reliable
+      universalLinks: url 
         ? [
-            `https://app.binance.com/en/web3wallet/dapp?url=${encoded}`,
-            `https://app.binance.com/web3wallet/dapp?url=${encoded}`,
-            `https://binance.com/en/web3wallet/dapp?url=${encoded}`
+            `https://app.binance.com/en/web3wallet/dapp?url=${encoded}${chainId ? `&chainId=${chainId}` : ''}`,
+            `https://app.binance.com/web3wallet/dapp?url=${encoded}${chainId ? `&chainId=${chainId}` : ''}`,
+            `https://app.binance.com/uni-qr/dapp?url=${encoded}${chainId ? `&chainId=${chainId}` : ''}`
           ]
         : [
             'https://app.binance.com/en/web3wallet',
             'https://app.binance.com/web3wallet',
-            'https://binance.com/en/web3wallet'
+            'https://app.binance.com/uni-qr/wallet'
           ],
       
-      // iOS URL Schemes
-      iosSchemes: base
+      // Official BNC Scheme (deeplink format)
+      bncSchemes: url
         ? [
-            `binance://web3wallet/open?url=${encoded}`,
-            `bnc://web3wallet/open?url=${encoded}`,
+            `bnc://app.binance.com/web3wallet/dapp?url=${encoded}${chainId ? `&chainId=${chainId}` : ''}`,
+            `bnc://app.binance.com/mp/app?appId=dapp&startPagePath=dapp&startPageQuery=url%3D${encoded}${chainId ? `%26chainId%3D${chainId}` : ''}`
+          ]
+        : [
+            'bnc://app.binance.com/web3wallet',
+            'bnc://app.binance.com/mp/app?appId=web3wallet'
+          ],
+      
+      // Binance scheme variations
+      binanceSchemes: url
+        ? [
             `binance://app.binance.com/web3wallet/dapp?url=${encoded}`,
-            `com.binance.app://web3wallet/dapp?url=${encoded}`
+            `binance://web3wallet/dapp?url=${encoded}`
           ]
         : [
-            'binance://web3wallet',
-            'bnc://web3wallet',
             'binance://app.binance.com/web3wallet',
-            'com.binance.app://web3wallet'
+            'binance://web3wallet'
           ],
       
-      // Android Intent URLs (Android 4.4+)
-      androidIntents: base
+      // Android Intent URLs (for better Android compatibility)
+      androidIntents: device.isAndroid ? (url
         ? [
-            `intent://web3wallet/dapp?url=${encoded}#Intent;scheme=binance;package=com.binance.dev;S.browser_fallback_url=https%3A%2F%2Fapp.binance.com%2Fen%2Fweb3wallet%2Fdapp%3Furl%3D${encoded};end`,
-            `intent://app.binance.com/en/web3wallet/dapp?url=${encoded}#Intent;scheme=https;package=com.binance.dev;end`,
-            `intent://web3wallet#Intent;scheme=binance;package=com.binance.dev;launchFlags=0x10000000;S.url=${encoded};end`
+            `intent://app.binance.com/web3wallet/dapp?url=${encoded}#Intent;scheme=https;package=com.binance.dev;S.browser_fallback_url=https%3A%2F%2Fapp.binance.com%2Fen%2Fweb3wallet%2Fdapp%3Furl%3D${encoded};end`,
+            `intent://web3wallet/dapp?url=${encoded}#Intent;scheme=bnc;package=com.binance.dev;end`
           ]
         : [
-            'intent://web3wallet#Intent;scheme=binance;package=com.binance.dev;S.browser_fallback_url=https%3A%2F%2Fapp.binance.com%2Fen%2Fweb3wallet;end',
-            'intent://app.binance.com/en/web3wallet#Intent;scheme=https;package=com.binance.dev;end',
-            'intent://web3wallet#Intent;scheme=binance;package=com.binance.dev;launchFlags=0x10000000;end'
-          ],
-      
-      // Android URI Schemes
-      androidSchemes: base
-        ? [
-            `binance://web3wallet/open?url=${encoded}`,
-            `bnc://web3wallet/open?url=${encoded}`,
-            `com.binance.dev://web3wallet/dapp?url=${encoded}`
-          ]
-        : [
-            'binance://web3wallet',
-            'bnc://web3wallet',
-            'com.binance.dev://web3wallet'
-          ],
-      
-      // WalletConnect Deep Links
-      walletConnect: base
-        ? [
-            `wc://app.binance.com/wc?uri=${encoded}`,
-            `binance://wc?uri=${encoded}`
-          ]
-        : []
+            'intent://app.binance.com/web3wallet#Intent;scheme=https;package=com.binance.dev;end',
+            'intent://web3wallet#Intent;scheme=bnc;package=com.binance.dev;end'
+          ]) : []
     };
     
     return links;
   };
 
-  const deepLinks = generateDeepLinks();
+  const deepLinks = generateOfficialDeepLinks();
 
   // ==================== APP OPENING TRACKER ====================
   let appOpened = false;
-  let trackingTimers = [];
   const startTime = Date.now();
-
-  const tracker = {
-    start: () => {
-      const handlers = {
-        visibility: () => {
-          if (document.hidden) {
-            appOpened = true;
-            tracker.cleanup();
-          }
-        },
-        blur: () => {
-          appOpened = true;
-          tracker.cleanup();
-        },
-        pagehide: () => {
-          appOpened = true;
-        },
-        focus: () => {
-          const elapsed = Date.now() - startTime;
-          // If we return in < 500ms, app probably didn't open
-          if (elapsed < 500) {
-            appOpened = false;
-          }
-        }
-      };
-
-      document.addEventListener('visibilitychange', handlers.visibility);
-      window.addEventListener('blur', handlers.blur);
-      window.addEventListener('pagehide', handlers.pagehide);
-      window.addEventListener('focus', handlers.focus);
-
-      return handlers;
+  
+  const trackingHandlers = {
+    visibility: () => {
+      if (document.hidden) {
+        appOpened = true;
+      }
     },
-    
-    cleanup: () => {
-      trackingTimers.forEach(timer => clearTimeout(timer));
-      trackingTimers = [];
+    blur: () => {
+      appOpened = true;
+    },
+    focus: () => {
+      // If we return quickly (< 800ms), app probably didn't open
+      if (Date.now() - startTime < 800) {
+        appOpened = false;
+      }
     }
   };
 
-  const handlers = tracker.start();
+  document.addEventListener('visibilitychange', trackingHandlers.visibility);
+  window.addEventListener('blur', trackingHandlers.blur);
+  window.addEventListener('focus', trackingHandlers.focus);
+  window.addEventListener('pagehide', trackingHandlers.visibility);
+
+  const cleanup = () => {
+    document.removeEventListener('visibilitychange', trackingHandlers.visibility);
+    window.removeEventListener('blur', trackingHandlers.blur);
+    window.removeEventListener('focus', trackingHandlers.focus);
+    window.removeEventListener('pagehide', trackingHandlers.visibility);
+  };
 
   // ==================== OPENING METHODS ====================
-  const openMethods = {
-    // Method 1: Direct location change (works for Universal Links & Intents)
+  const openLink = {
     direct: (url) => {
       try {
         window.location.href = url;
@@ -174,81 +149,36 @@ async function connectBinanceWeb3(dappUrl = '', options = {}) {
         return false;
       }
     },
-
-    // Method 2: Hidden iframe (works for some iOS/Android schemes)
+    
     iframe: (url) => {
       try {
         const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'display:none;width:0;height:0;border:none;position:absolute;top:-999px;left:-999px;';
-        iframe.setAttribute('sandbox', 'allow-top-navigation allow-scripts');
+        iframe.style.cssText = 'display:none;width:0;height:0;position:absolute;';
         iframe.src = url;
-        
         document.body.appendChild(iframe);
-        
-        trackingTimers.push(setTimeout(() => {
+        setTimeout(() => {
           try {
-            if (iframe.parentNode) {
-              iframe.parentNode.removeChild(iframe);
-            }
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
           } catch (e) {}
-        }, 2000));
-        
+        }, 2000);
         return true;
       } catch (e) {
         return false;
       }
     },
-
-    // Method 3: Anchor click (works for URI schemes with user gesture)
+    
     anchor: (url) => {
       try {
         const a = document.createElement('a');
         a.href = url;
         a.style.display = 'none';
-        a.rel = 'noopener noreferrer';
-        
         document.body.appendChild(a);
-        
-        // Simulate real user click
-        const clickEvent = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-        
-        a.dispatchEvent(clickEvent);
-        
-        trackingTimers.push(setTimeout(() => {
+        a.click();
+        setTimeout(() => {
           try {
-            if (a.parentNode) {
-              a.parentNode.removeChild(a);
-            }
+            if (a.parentNode) a.parentNode.removeChild(a);
           } catch (e) {}
-        }, 200));
-        
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-
-    // Method 4: Window.open (works for some browsers)
-    windowOpen: (url) => {
-      try {
-        const opened = window.open(url, '_blank');
-        if (opened === null || typeof opened === 'undefined') {
-          return false;
-        }
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-
-    // Method 5: Location.replace (no history entry)
-    replace: (url) => {
-      try {
-        window.location.replace(url);
+        }, 200);
         return true;
       } catch (e) {
         return false;
@@ -256,112 +186,103 @@ async function connectBinanceWeb3(dappUrl = '', options = {}) {
     }
   };
 
-  // ==================== iOS OPENING STRATEGY ====================
-  const executeIOSStrategy = async () => {
-    if (config.showDebugToasts) showNotification('🍎 iOS', 'Starting connection');
-
-    // Step 1: Universal Link (primary method for iOS)
-    openMethods.direct(deepLinks.iosUniversal[0]);
+  // ==================== EXECUTION STRATEGY ====================
+  const executeStrategy = async () => {
     
-    // Step 2: Try alternative Universal Links
+    if (device.isInAppBrowser) {
+      handleInAppBrowser();
+      return false;
+    }
+
+    // STRATEGY: Try all deep link formats progressively
+    
+    // Step 1: Universal Link (Primary - works on both iOS and Android)
+    openLink.direct(deepLinks.universalLinks[0]);
+    
     await delay(400);
-    if (!appOpened) {
-      openMethods.direct(deepLinks.iosUniversal[1]);
+    if (appOpened) return true;
+    
+    // Step 2: Android Intent (Best for Android)
+    if (device.isAndroid && deepLinks.androidIntents.length > 0) {
+      openLink.direct(deepLinks.androidIntents[0]);
+      await delay(400);
+      if (appOpened) return true;
     }
-
-    // Step 3: Try URL schemes with iframe (iOS 9-12 compatibility)
-    await delay(300);
-    if (!appOpened) {
-      openMethods.iframe(deepLinks.iosSchemes[0]);
-    }
-
-    // Step 4: Try anchor method with scheme
-    await delay(300);
-    if (!appOpened) {
-      openMethods.anchor(deepLinks.iosSchemes[1]);
-    }
-
-    // Step 5: WalletConnect protocol (if enabled)
-    if (config.enableWalletConnect && deepLinks.walletConnect.length > 0) {
-      await delay(300);
-      if (!appOpened) {
-        openMethods.direct(deepLinks.walletConnect[0]);
-      }
-    }
-
-    // Step 6: Last resort - alternative schemes
+    
+    // Step 3: BNC Scheme with iframe (iOS compatibility)
+    openLink.iframe(deepLinks.bncSchemes[0]);
     await delay(400);
-    if (!appOpened) {
-      openMethods.direct(deepLinks.iosSchemes[2]);
+    if (appOpened) return true;
+    
+    // Step 4: Alternative Universal Link
+    openLink.direct(deepLinks.universalLinks[1]);
+    await delay(400);
+    if (appOpened) return true;
+    
+    // Step 5: BNC Scheme direct
+    openLink.anchor(deepLinks.bncSchemes[0]);
+    await delay(400);
+    if (appOpened) return true;
+    
+    // Step 6: Binance scheme fallback
+    openLink.direct(deepLinks.binanceSchemes[0]);
+    await delay(400);
+    if (appOpened) return true;
+    
+    // Step 7: Alternative Android Intent
+    if (device.isAndroid && deepLinks.androidIntents[1]) {
+      openLink.direct(deepLinks.androidIntents[1]);
+      await delay(400);
+      if (appOpened) return true;
     }
+    
+    // Step 8: Last resort - MP app format
+    if (deepLinks.bncSchemes[1]) {
+      openLink.direct(deepLinks.bncSchemes[1]);
+    }
+    
+    return appOpened;
   };
 
-  // ==================== ANDROID OPENING STRATEGY ====================
-  const executeAndroidStrategy = async () => {
-    if (config.showDebugToasts) showNotification('🤖 Android', 'Starting connection');
-
-    // Step 1: Android Intent (primary method for Android)
-    openMethods.direct(deepLinks.androidIntents[0]);
-
-    // Step 2: Try alternative Intent formats
-    await delay(300);
+  // ==================== EXECUTE ====================
+  try {
+    await executeStrategy();
+    
+    // Wait for final result
+    await delay(2000);
+    
+    cleanup();
+    
     if (!appOpened) {
-      openMethods.direct(deepLinks.androidIntents[1]);
+      handleAppNotOpened();
     }
+    
+    return appOpened;
+    
+  } catch (error) {
+    cleanup();
+    showNotification('❌ Error', error.message);
+    return false;
+  }
 
-    // Step 3: Try Universal Link fallback
-    await delay(300);
-    if (!appOpened) {
-      openMethods.direct(deepLinks.iosUniversal[0]);
-    }
-
-    // Step 4: Try scheme with iframe
-    await delay(300);
-    if (!appOpened) {
-      openMethods.iframe(deepLinks.androidSchemes[0]);
-    }
-
-    // Step 5: WalletConnect protocol (if enabled)
-    if (config.enableWalletConnect && deepLinks.walletConnect.length > 0) {
-      await delay(300);
-      if (!appOpened) {
-        openMethods.direct(deepLinks.walletConnect[1]);
-      }
-    }
-
-    // Step 6: Alternative Intent with launch flags
-    await delay(300);
-    if (!appOpened) {
-      openMethods.direct(deepLinks.androidIntents[2]);
-    }
-
-    // Step 7: Direct scheme attempt
-    await delay(300);
-    if (!appOpened) {
-      openMethods.anchor(deepLinks.androidSchemes[1]);
-    }
-  };
-
-  // ==================== IN-APP BROWSER HANDLER ====================
-  const handleInAppBrowser = () => {
-    const message = device.isIOS
-      ? '📱 Please open this page in Safari or Chrome browser'
-      : '📱 Please open this page in Chrome or your default browser';
+  // ==================== FAILURE HANDLERS ====================
+  function handleInAppBrowser() {
+    const browserName = device.isIOS ? 'Safari or Chrome' : 'Chrome';
     
     showModal({
-      title: 'Open in Browser',
-      message,
+      title: '📱 Open in Browser',
+      message: `For best results, open this page in ${browserName}.\n\nIn-app browsers have limited deep link support.`,
       buttons: [
         {
           text: 'Copy Link',
           style: 'primary',
           action: async () => {
-            const link = deepLinks.iosUniversal[0];
+            const link = deepLinks.universalLinks[0];
             try {
               await navigator.clipboard.writeText(link);
               showNotification('✅ Copied', 'Paste in your browser');
             } catch (e) {
-              promptCopy(link);
+              prompt('Copy this link:', link);
             }
           }
         },
@@ -369,79 +290,40 @@ async function connectBinanceWeb3(dappUrl = '', options = {}) {
           text: 'Try Anyway',
           style: 'secondary',
           action: () => {
-            if (device.isIOS) {
-              executeIOSStrategy();
-            } else {
-              executeAndroidStrategy();
-            }
+            openLink.direct(deepLinks.universalLinks[0]);
           }
         }
       ]
     });
-  };
-
-  // ==================== MAIN EXECUTION ====================
-  try {
-    // Check for in-app browser first
-    if (device.isInAppBrowser) {
-      handleInAppBrowser();
-      return false;
-    }
-
-    // Execute platform-specific strategy
-    if (device.isIOS) {
-      await executeIOSStrategy();
-    } else if (device.isAndroid) {
-      await executeAndroidStrategy();
-    }
-
-    // Wait for result
-    await delay(config.timeout);
-
-    // Handle failure
-    if (!appOpened) {
-      handleAppNotOpened();
-    }
-
-    return appOpened;
-
-  } catch (error) {
-    if (config.showDebugToasts) {
-      showNotification('❌ Error', error.message);
-    }
-    return false;
-  } finally {
-    tracker.cleanup();
   }
 
-  // ==================== FAILURE HANDLER ====================
   function handleAppNotOpened() {
-    const storeUrls = {
+    const storeLinks = {
       ios: 'https://apps.apple.com/app/binance-buy-bitcoin-crypto/id1436799971',
       android: 'https://play.google.com/store/apps/details?id=com.binance.dev'
     };
-
+    
     showModal({
-      title: '🔗 Connection Failed',
-      message: 'Unable to open Binance app. The app may not be installed or this browser doesn\'t support deep linking.',
+      title: '❌ Unable to Open Binance',
+      message: 'The Binance app may not be installed, or your browser doesn\'t support deep links.',
       buttons: [
         {
-          text: device.isIOS ? 'Get from App Store' : 'Get from Play Store',
+          text: device.isIOS ? 'Get on App Store' : 'Get on Play Store',
           style: 'primary',
           action: () => {
-            window.location.href = device.isIOS ? storeUrls.ios : storeUrls.android;
+            window.location.href = device.isIOS ? storeLinks.ios : storeLinks.android;
           }
         },
         {
-          text: 'Copy Link',
+          text: 'Copy Deep Link',
           style: 'secondary',
           action: async () => {
-            const link = deepLinks.iosUniversal[0];
+            const link = deepLinks.universalLinks[0];
             try {
               await navigator.clipboard.writeText(link);
               showNotification('✅ Copied', 'Open in Binance app manually');
             } catch (e) {
-              promptCopy(link);
+              prompt('Copy this link:', link);
             }
           }
         },
@@ -449,7 +331,7 @@ async function connectBinanceWeb3(dappUrl = '', options = {}) {
           text: 'Retry',
           style: 'tertiary',
           action: () => {
-            connectBinanceWeb3(dappUrl, config);
+            connectBinanceWeb3(dappUrl, chainId);
           }
         }
       ]
@@ -480,26 +362,26 @@ function showNotification(title, message) {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
     line-height: 1.5;
-    animation: toast-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   `;
   
   toast.innerHTML = `<strong>${title}</strong>${message ? `<br><span style="opacity:0.8">${message}</span>` : ''}`;
   document.body.appendChild(toast);
   
   setTimeout(() => {
-    toast.style.animation = 'toast-out 0.3s ease forwards';
+    toast.style.animation = 'slideDown 0.3s ease forwards';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
   
-  if (!document.getElementById('toast-styles')) {
+  if (!document.getElementById('binance-toast-styles')) {
     const style = document.createElement('style');
-    style.id = 'toast-styles';
+    style.id = 'binance-toast-styles';
     style.textContent = `
-      @keyframes toast-in {
+      @keyframes slideUp {
         from { transform: translateX(-50%) translateY(100px); opacity: 0; }
         to { transform: translateX(-50%) translateY(0); opacity: 1; }
       }
-      @keyframes toast-out {
+      @keyframes slideDown {
         from { transform: translateX(-50%) translateY(0); opacity: 1; }
         to { transform: translateX(-50%) translateY(100px); opacity: 0; }
       }
@@ -519,7 +401,7 @@ function showModal({ title, message, buttons }) {
     align-items: center;
     justify-content: center;
     z-index: 1000000;
-    animation: fade-in 0.2s ease;
+    animation: fadeIn 0.2s ease;
     padding: 20px;
   `;
   
@@ -531,25 +413,24 @@ function showModal({ title, message, buttons }) {
     width: 100%;
     max-width: 380px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    animation: slide-up 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: scaleIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   `;
   
   modal.innerHTML = `
     <h3 style="margin:0 0 12px; font-size:22px; font-weight:700; color:#1a1a1a; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">${title}</h3>
-    <p style="margin:0 0 24px; line-height:1.6; color:#666; font-size:15px">${message}</p>
+    <p style="margin:0 0 24px; line-height:1.6; color:#666; font-size:15px; white-space:pre-line">${message}</p>
     <div style="display:flex; flex-direction:column; gap:12px"></div>
   `;
   
   const buttonContainer = modal.querySelector('div');
+  const styles = {
+    primary: 'background:#F0B90B; color:#000; font-weight:700',
+    secondary: 'background:#f5f5f5; color:#1a1a1a; font-weight:600',
+    tertiary: 'background:transparent; color:#666; border:2px solid #e0e0e0'
+  };
   
   buttons.forEach(btn => {
     const button = document.createElement('button');
-    const styles = {
-      primary: 'background:#F0B90B; color:#000; font-weight:700',
-      secondary: 'background:#f5f5f5; color:#1a1a1a; font-weight:600',
-      tertiary: 'background:transparent; color:#666; border:2px solid #e0e0e0'
-    };
-    
     button.style.cssText = `
       ${styles[btn.style] || styles.secondary};
       border: none;
@@ -558,7 +439,7 @@ function showModal({ title, message, buttons }) {
       font-size: 16px;
       cursor: pointer;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      transition: all 0.2s;
+      transition: transform 0.2s;
       -webkit-tap-highlight-color: transparent;
     `;
     
@@ -577,50 +458,56 @@ function showModal({ title, message, buttons }) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   
-  if (!document.getElementById('modal-styles')) {
+  if (!document.getElementById('binance-modal-styles')) {
     const style = document.createElement('style');
-    style.id = 'modal-styles';
+    style.id = 'binance-modal-styles';
     style.textContent = `
-      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes slide-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     `;
     document.head.appendChild(style);
   }
 }
 
-function promptCopy(text) {
-  const input = prompt('Copy this link manually:', text);
-}
+// ==================== PUBLIC API ====================
 
-// ==================== SIMPLE API ====================
+// Simple usage - just open wallet
+window.openBinanceWeb3 = () => connectBinanceWeb3();
 
-// Basic usage
-window.openBinanceWeb3 = (dappUrl) => connectBinanceWeb3(dappUrl);
+// With dApp URL
+window.openBinanceWeb3WithDapp = (url) => connectBinanceWeb3(url);
 
-// With WalletConnect disabled
-window.openBinanceWeb3Simple = (dappUrl) => connectBinanceWeb3(dappUrl, { enableWalletConnect: false });
-
-// With debug mode
-window.openBinanceWeb3Debug = (dappUrl) => connectBinanceWeb3(dappUrl, { showDebugToasts: true });
+// With dApp URL and chain ID
+window.openBinanceWeb3WithChain = (url, chainId) => connectBinanceWeb3(url, chainId);
 
 /*
-USAGE:
+==================== USAGE EXAMPLES ====================
 
-// Basic
-connectBinanceWeb3('https://your-dapp.com');
-
-// Just open wallet
+// Basic - Open Web3 Wallet home
 connectBinanceWeb3();
 
-// With options
-connectBinanceWeb3('https://your-dapp.com', {
-  enableWalletConnect: true,
-  showDebugToasts: true,
-  timeout: 3000
-});
+// Open your dApp in Binance Web3 Wallet
+connectBinanceWeb3('https://your-dapp.com');
+
+// Open your dApp on specific chain (e.g., BSC = 56, Ethereum = 1)
+connectBinanceWeb3('https://your-dapp.com', 56);
 
 // Button integration
 <button onclick="connectBinanceWeb3('https://your-dapp.com')">
-  Connect to Binance Web3
+  Connect Binance Web3
 </button>
+
+// Or with chain ID
+<button onclick="connectBinanceWeb3('https://pancakeswap.finance', 56)">
+  Open PancakeSwap on BSC
+</button>
+
+==================== SUPPORTED CHAINS ====================
+- Ethereum: 1
+- BSC (Binance Smart Chain): 56
+- Polygon: 137
+- Arbitrum: 42161
+- Optimism: 10
+- Base: 8453
+- And more...
 */
