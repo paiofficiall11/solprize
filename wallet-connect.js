@@ -24,8 +24,9 @@ function detectWallet() {
 // ===== DEEP LINKS FOR MOBILE USERS =====
 // (Used when wallet extension isn't available)
 const MOBILE_LINKS = {
-    phantom: "https://phantom.app/ul/browse/",
-    solflare: "https://solflare.com/ul/v1/login/"
+  phantom: "binance://walletconnect",
+  solflare: "https://solflare.com/ul/v1/login/",
+  binance: "binance://walletconnect"
 };
 
 // ===== MAIN CONNECT FUNCTION =====
