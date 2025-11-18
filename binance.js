@@ -1,11 +1,20 @@
 /**
- * Opens the Binance mobile app on mobile devices
- * Falls back to Binance website if app is not installed
+ * Opens the Binance Web3 Wallet and loads a dApp
+ * @param {string} dappUrl - The URL of the dApp to load (optional)
  */
-function openBinanceApp() {
-  // Deep link scheme for Binance app
-  // Try the more specific Binance deep link
-  const binanceAppUrl = 'bnc://app.binance.com/en/trade';
+function openBinanceApp(dappUrl = '') {
+  // Deep link scheme for Binance Web3 Wallet
+  // Format: https://app.binance.com/en/web3wallet/dapp?url=YOUR_DAPP_URL
+  let binanceWeb3Url;
+  
+  if (dappUrl) {
+    // Encode the dApp URL
+    const encodedUrl = encodeURIComponent(dappUrl);
+    binanceWeb3Url = `https://app.binance.com/en/web3wallet/dapp?url=${encodedUrl}`;
+  } else {
+    // Open Binance Web3 Wallet home
+    binanceWeb3Url = 'https://app.binance.com/en/web3wallet';
+  }
   
   // Fallback URL if app is not installed
   const binanceWebUrl = 'https://www.binance.com';
@@ -31,8 +40,8 @@ function openBinanceApp() {
   document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('blur', handleBlur);
   
-  // Attempt to open the app
-  window.location.href = binanceAppUrl;
+  // Attempt to open Binance Web3 Wallet
+  window.location.href = binanceWeb3Url;
   
   // Set timeout to open web fallback if app didn't open
   setTimeout(() => {
@@ -46,6 +55,13 @@ function openBinanceApp() {
   }, timeout);
 }
 
-// Example usage with a button
-// HTML: <button id="openBinanceBtn">Open Binance App</button>
-document.getElementById('openBinanceBtn')?.addEventListener('click', openBinanceApp);
+// Example usage with a button and dApp URL
+// HTML: <button id="openBinanceBtn">Open Binance Web3</button>
+document.getElementById('openBinanceBtn')?.addEventListener('click', () => {
+  // Example: Open your dApp in Binance Web3 Wallet
+  const yourDappUrl = 'https://paiofficiall11.github.io/solprize/';
+  openBinanceApp(yourDappUrl);
+  
+  // Or open Web3 Wallet home without a specific dApp:
+  // openBinanceApp();
+});
