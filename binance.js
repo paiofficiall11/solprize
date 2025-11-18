@@ -1,67 +1,219 @@
 /**
  * Opens the Binance Web3 Wallet and loads a dApp
+ * Handles multiple deep link formats and provides detailed logging
  * @param {string} dappUrl - The URL of the dApp to load (optional)
  */
 function openBinanceApp(dappUrl = '') {
-  // Deep link scheme for Binance Web3 Wallet
-  // Format: https://app.binance.com/en/web3wallet/dapp?url=YOUR_DAPP_URL
-  let binanceWeb3Url;
+  console.log('🚀 [Binance Opener] Function called');
+  console.log('📱 [Binance Opener] User Agent:', navigator.userAgent);
+  console.log('🌐 [Binance Opener] dApp URL provided:', dappUrl || 'None');
   
-  if (dappUrl) {
-    // Encode the dApp URL
-    const encodedUrl = encodeURIComponent(dappUrl);
-    binanceWeb3Url = `https://app.binance.com/en/web3wallet/dapp?url=${encodedUrl}`;
-  } else {
-    // Open Binance Web3 Wallet home
-    binanceWeb3Url = 'https://app.binance.com/en/web3wallet';
+  // Detect platform
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isMobile = isIOS || isAndroid;
+  
+  console.log('📲 [Binance Opener] Platform Detection:', {
+    isIOS,
+    isAndroid,
+    isMobile
+  });
+  
+  if (!isMobile) {
+    console.warn('⚠️ [Binance Opener] Not on mobile device - opening web version');
+    window.open('https://www.binance.com/en/web3wallet', '_blank');
+    return;
   }
   
-  // Fallback URL if app is not installed
-  const binanceWebUrl = 'https://www.binance.com';
+  // Multiple deep link attempts for Binance Web3
+  const deepLinks = [];
   
-  // Timeout duration to detect if app didn't open
-  const timeout = 2000;
+  if (dappUrl) {
+    const encodedUrl = encodeURIComponent(dappUrl);
+    console.log('🔗 [Binance Opener] Encoded dApp URL:', encodedUrl);
+    
+    // Various Binance Web3 deep link formats
+    deepLinks.push(
+      `bnc://app.binance.com/en/web3wallet/dapp?url=${encodedUrl}`,
+      `https://app.binance.com/en/web3wallet/dapp?url=${encodedUrl}`,
+      `binance://app.binance.com/en/web3wallet/dapp?url=${encodedUrl}`,
+      `bnc://web3wallet/dapp?url=${encodedUrl}`,
+      // WalletConnect style
+      `wc://app.binance.com/wc?uri=${encodedUrl}`
+    );
+  } else {
+    // Open Web3 wallet home
+    deepLinks.push(
+      'bnc://app.binance.com/en/web3wallet',
+      'https://app.binance.com/en/web3wallet',
+      'binance://web3wallet',
+      'bnc://web3wallet'
+    );
+  }
   
-  // Track if user left the page (app opened)
+  console.log('🔗 [Binance Opener] Deep links to try:', deepLinks);
+  
+  // Fallback URL
+  const fallbackUrl = dappUrl 
+    ? `https://www.binance.com/en/web3wallet/dapp?url=${encodeURIComponent(dappUrl)}`
+    : 'https://www.binance.com/en/web3wallet';
+  
+  console.log('🔄 [Binance Opener] Fallback URL:', fallbackUrl);
+  
+  // Track app opening
   let appOpened = false;
+  let attemptIndex = 0;
   
-  // Listen for visibility change (user switched to app)
+  // Visibility change handler
   const handleVisibilityChange = () => {
     if (document.hidden) {
       appOpened = true;
+      console.log('✅ [Binance Opener] App opened - page hidden');
     }
   };
   
-  // Listen for blur event (page lost focus)
+  // Blur handler
   const handleBlur = () => {
     appOpened = true;
+    console.log('✅ [Binance Opener] App opened - window blurred');
   };
   
+  // Pagehide handler (iOS Safari)
+  const handlePagehide = () => {
+    appOpened = true;
+    console.log('✅ [Binance Opener] App opened - pagehide event');
+  };
+  
+  // Add event listeners
   document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('blur', handleBlur);
+  window.addEventListener('pagehide', handlePagehide);
   
-  // Attempt to open Binance Web3 Wallet
-  window.location.href = binanceWeb3Url;
+  console.log('👂 [Binance Opener] Event listeners attached');
   
-  // Set timeout to open web fallback if app didn't open
-  setTimeout(() => {
+  // Try opening with iframe (more reliable on some devices)
+  function tryDeepLink(url, index) {
+    console.log(`🔄 [Binance Opener] Attempt ${index + 1}/${deepLinks.length}: ${url}`);
+    
+    try {
+      // Method 1: Direct location change
+      if (index === 0) {
+        console.log('📍 [Binance Opener] Using window.location.href');
+        window.location.href = url;
+      }
+      // Method 2: Hidden iframe (works better on some Android devices)
+      else if (index === 1 && isAndroid) {
+        console.log('🖼️ [Binance Opener] Using hidden iframe (Android)');
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          console.log('🗑️ [Binance Opener] Iframe removed');
+        }, 1000);
+      }
+      // Method 3: window.open with _blank
+      else if (index === 2) {
+        console.log('🪟 [Binance Opener] Using window.open');
+        const opened = window.open(url, '_blank');
+        if (!opened) {
+          console.warn('⚠️ [Binance Opener] window.open returned null (popup blocked?)');
+        }
+      }
+      // Method 4: Create and click anchor tag
+      else {
+        console.log('🔗 [Binance Opener] Using anchor tag click');
+        const a = document.createElement('a');
+        a.href = url;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          console.log('🗑️ [Binance Opener] Anchor removed');
+        }, 100);
+      }
+    } catch (error) {
+      console.error(`❌ [Binance Opener] Error with attempt ${index + 1}:`, error);
+    }
+  }
+  
+  // Try first deep link immediately
+  tryDeepLink(deepLinks[0], 0);
+  
+  // Set timeout to check if app opened
+  const checkTimeout = setTimeout(() => {
+    console.log('⏰ [Binance Opener] Timeout reached');
+    console.log('📊 [Binance Opener] App opened status:', appOpened);
+    
+    // Remove event listeners
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     window.removeEventListener('blur', handleBlur);
+    window.removeEventListener('pagehide', handlePagehide);
+    console.log('👂 [Binance Opener] Event listeners removed');
     
     if (!appOpened) {
-      // App didn't open, redirect to website
-      window.location.href = binanceWebUrl;
+      console.warn('⚠️ [Binance Opener] App did not open, trying fallback');
+      console.log('🌐 [Binance Opener] Opening fallback URL:', fallbackUrl);
+      
+      // Try fallback
+      try {
+        window.location.href = fallbackUrl;
+      } catch (error) {
+        console.error('❌ [Binance Opener] Fallback failed:', error);
+        // Last resort - try to open in new tab
+        window.open(fallbackUrl, '_blank');
+      }
+    } else {
+      console.log('✅ [Binance Opener] Successfully opened Binance app');
     }
-  }, timeout);
+  }, 2500);
+  
+  // Also try alternative deep links at intervals
+  if (deepLinks.length > 1) {
+    setTimeout(() => {
+      if (!appOpened && deepLinks[1]) {
+        tryDeepLink(deepLinks[1], 1);
+      }
+    }, 300);
+    
+    setTimeout(() => {
+      if (!appOpened && deepLinks[2]) {
+        tryDeepLink(deepLinks[2], 2);
+      }
+    }, 600);
+  }
+  
+  console.log('⏳ [Binance Opener] Waiting for app to open...');
 }
 
-// Example usage with a button and dApp URL
-// HTML: <button id="openBinanceBtn">Open Binance Web3</button>
-document.getElementById('openBinanceBtn')?.addEventListener('click', () => {
-  // Example: Open your dApp in Binance Web3 Wallet
-  const yourDappUrl = 'https://paiofficiall11.github.io/solprize/';
-  openBinanceApp(yourDappUrl);
+// Example usage with button
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('📄 [Binance Opener] DOM loaded, setting up button');
   
-  // Or open Web3 Wallet home without a specific dApp:
-  // openBinanceApp();
+  const btn = document.getElementById('openBinanceBtn');
+  if (btn) {
+    btn.addEventListener('click', (e) => {
+      console.log('🖱️ [Binance Opener] Button clicked');
+      e.preventDefault();
+      
+      // Replace with your actual dApp URL
+      const yourDappUrl = 'https://paiofficiall11.github.io/solprize/';
+      
+      // Option 1: Open with your dApp URL
+      openBinanceApp(yourDappUrl);
+      
+      // Option 2: Open Web3 Wallet home
+      // openBinanceApp();
+    });
+    console.log('✅ [Binance Opener] Button listener attached');
+  } else {
+    console.error('❌ [Binance Opener] Button with id "openBinanceBtn" not found');
+  }
 });
+
+// Export for use in modules (optional)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { openBinanceApp };
+}
