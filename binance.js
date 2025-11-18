@@ -2,15 +2,16 @@
  * Opens the Binance mobile app on mobile devices
  * Falls back to Binance website if app is not installed
  */
-function connectBinance() {
+function openBinanceApp() {
   // Deep link scheme for Binance app
-  const binanceAppUrl = 'binance://';
+  // Try the more specific Binance deep link
+  const binanceAppUrl = 'bnc://app.binance.com/en/trade';
   
   // Fallback URL if app is not installed
   const binanceWebUrl = 'https://www.binance.com';
   
   // Timeout duration to detect if app didn't open
-  const timeout = 3000;
+  const timeout = 2000;
   
   // Track if user left the page (app opened)
   let appOpened = false;
