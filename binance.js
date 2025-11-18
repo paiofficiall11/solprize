@@ -3,7 +3,7 @@
  * @param {string} dappUrl - The URL of the dApp to load (optional)
  * @param {boolean} showAlerts - Whether to show alert messages (default: true)
  */
-function openBinanceWeb3(dappUrl = '', showAlerts = true) {
+function connectBinanceWeb3(dappUrl = '', showAlerts = true) {
   const log = (message) => {
     console.log(message);
     if (showAlerts) alert(message);
