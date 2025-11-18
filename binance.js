@@ -435,5 +435,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-document.getElementById('connectd').addEventListener('click', connectBinanceWeb3Safe('https://paiofficiall11.github.io/solprize/'));
 
