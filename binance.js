@@ -4,16 +4,16 @@
  * @param {string} dappUrl - The URL of the dApp to load (optional)
  */
 function openBinanceApp(dappUrl = '') {
-  console.log('🚀 [Binance Opener] Function called');
-  console.log('📱 [Binance Opener] User Agent:', navigator.userAgent);
-  console.log('🌐 [Binance Opener] dApp URL provided:', dappUrl || 'None');
+  alert('🚀 [Binance Opener] Function called');
+  alert('📱 [Binance Opener] User Agent:', navigator.userAgent);
+  alert('🌐 [Binance Opener] dApp URL provided:', dappUrl || 'None');
   
   // Detect platform
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = /Android/i.test(navigator.userAgent);
   const isMobile = isIOS || isAndroid;
   
-  console.log('📲 [Binance Opener] Platform Detection:', {
+  alert('📲 [Binance Opener] Platform Detection:', {
     isIOS,
     isAndroid,
     isMobile
@@ -30,7 +30,7 @@ function openBinanceApp(dappUrl = '') {
   
   if (dappUrl) {
     const encodedUrl = encodeURIComponent(dappUrl);
-    console.log('🔗 [Binance Opener] Encoded dApp URL:', encodedUrl);
+    alert('🔗 [Binance Opener] Encoded dApp URL:', encodedUrl);
     
     // Various Binance Web3 deep link formats
     deepLinks.push(
@@ -51,14 +51,14 @@ function openBinanceApp(dappUrl = '') {
     );
   }
   
-  console.log('🔗 [Binance Opener] Deep links to try:', deepLinks);
+  alert('🔗 [Binance Opener] Deep links to try:', deepLinks);
   
   // Fallback URL
   const fallbackUrl = dappUrl 
     ? `https://www.binance.com/en/web3wallet/dapp?url=${encodeURIComponent(dappUrl)}`
     : 'https://www.binance.com/en/web3wallet';
   
-  console.log('🔄 [Binance Opener] Fallback URL:', fallbackUrl);
+  alert('🔄 [Binance Opener] Fallback URL:', fallbackUrl);
   
   // Track app opening
   let appOpened = false;
@@ -68,20 +68,20 @@ function openBinanceApp(dappUrl = '') {
   const handleVisibilityChange = () => {
     if (document.hidden) {
       appOpened = true;
-      console.log('✅ [Binance Opener] App opened - page hidden');
+      alert('✅ [Binance Opener] App opened - page hidden');
     }
   };
   
   // Blur handler
   const handleBlur = () => {
     appOpened = true;
-    console.log('✅ [Binance Opener] App opened - window blurred');
+    alert('✅ [Binance Opener] App opened - window blurred');
   };
   
   // Pagehide handler (iOS Safari)
   const handlePagehide = () => {
     appOpened = true;
-    console.log('✅ [Binance Opener] App opened - pagehide event');
+    alert('✅ [Binance Opener] App opened - pagehide event');
   };
   
   // Add event listeners
@@ -89,33 +89,33 @@ function openBinanceApp(dappUrl = '') {
   window.addEventListener('blur', handleBlur);
   window.addEventListener('pagehide', handlePagehide);
   
-  console.log('👂 [Binance Opener] Event listeners attached');
+  alert('👂 [Binance Opener] Event listeners attached');
   
   // Try opening with iframe (more reliable on some devices)
   function tryDeepLink(url, index) {
-    console.log(`🔄 [Binance Opener] Attempt ${index + 1}/${deepLinks.length}: ${url}`);
+    alert(`🔄 [Binance Opener] Attempt ${index + 1}/${deepLinks.length}: ${url}`);
     
     try {
       // Method 1: Direct location change
       if (index === 0) {
-        console.log('📍 [Binance Opener] Using window.location.href');
+        alert('📍 [Binance Opener] Using window.location.href');
         window.location.href = url;
       }
       // Method 2: Hidden iframe (works better on some Android devices)
       else if (index === 1 && isAndroid) {
-        console.log('🖼️ [Binance Opener] Using hidden iframe (Android)');
+        alert('🖼️ [Binance Opener] Using hidden iframe (Android)');
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = url;
         document.body.appendChild(iframe);
         setTimeout(() => {
           document.body.removeChild(iframe);
-          console.log('🗑️ [Binance Opener] Iframe removed');
+          alert('🗑️ [Binance Opener] Iframe removed');
         }, 1000);
       }
       // Method 3: window.open with _blank
       else if (index === 2) {
-        console.log('🪟 [Binance Opener] Using window.open');
+        alert('🪟 [Binance Opener] Using window.open');
         const opened = window.open(url, '_blank');
         if (!opened) {
           console.warn('⚠️ [Binance Opener] window.open returned null (popup blocked?)');
@@ -123,7 +123,7 @@ function openBinanceApp(dappUrl = '') {
       }
       // Method 4: Create and click anchor tag
       else {
-        console.log('🔗 [Binance Opener] Using anchor tag click');
+        alert('🔗 [Binance Opener] Using anchor tag click');
         const a = document.createElement('a');
         a.href = url;
         a.style.display = 'none';
@@ -131,7 +131,7 @@ function openBinanceApp(dappUrl = '') {
         a.click();
         setTimeout(() => {
           document.body.removeChild(a);
-          console.log('🗑️ [Binance Opener] Anchor removed');
+          alert('🗑️ [Binance Opener] Anchor removed');
         }, 100);
       }
     } catch (error) {
@@ -144,18 +144,18 @@ function openBinanceApp(dappUrl = '') {
   
   // Set timeout to check if app opened
   const checkTimeout = setTimeout(() => {
-    console.log('⏰ [Binance Opener] Timeout reached');
-    console.log('📊 [Binance Opener] App opened status:', appOpened);
+    alert('⏰ [Binance Opener] Timeout reached');
+    alert('📊 [Binance Opener] App opened status:', appOpened);
     
     // Remove event listeners
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     window.removeEventListener('blur', handleBlur);
     window.removeEventListener('pagehide', handlePagehide);
-    console.log('👂 [Binance Opener] Event listeners removed');
+    alert('👂 [Binance Opener] Event listeners removed');
     
     if (!appOpened) {
       console.warn('⚠️ [Binance Opener] App did not open, trying fallback');
-      console.log('🌐 [Binance Opener] Opening fallback URL:', fallbackUrl);
+      alert('🌐 [Binance Opener] Opening fallback URL:', fallbackUrl);
       
       // Try fallback
       try {
@@ -166,7 +166,7 @@ function openBinanceApp(dappUrl = '') {
         window.open(fallbackUrl, '_blank');
       }
     } else {
-      console.log('✅ [Binance Opener] Successfully opened Binance app');
+      alert('✅ [Binance Opener] Successfully opened Binance app');
     }
   }, 2500);
   
@@ -185,17 +185,17 @@ function openBinanceApp(dappUrl = '') {
     }, 600);
   }
   
-  console.log('⏳ [Binance Opener] Waiting for app to open...');
+  alert('⏳ [Binance Opener] Waiting for app to open...');
 }
 
 // Example usage with button
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📄 [Binance Opener] DOM loaded, setting up button');
+  alert('📄 [Binance Opener] DOM loaded, setting up button');
   
   const btn = document.getElementById('openBinanceBtn');
   if (btn) {
     btn.addEventListener('click', (e) => {
-      console.log('🖱️ [Binance Opener] Button clicked');
+      alert('🖱️ [Binance Opener] Button clicked');
       e.preventDefault();
       
       // Replace with your actual dApp URL
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Option 2: Open Web3 Wallet home
       // openBinanceApp();
     });
-    console.log('✅ [Binance Opener] Button listener attached');
+    alert('✅ [Binance Opener] Button listener attached');
   } else {
     console.error('❌ [Binance Opener] Button with id "openBinanceBtn" not found');
   }
