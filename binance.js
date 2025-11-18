@@ -5,6 +5,7 @@
  * @param {Object} options - Configuration options
  */
 async function connectBinanceWeb3(dappUrl = '', options = {}) {
+  alert("Attempting Binance Web3 Wallet connection...");
   const config = {
     enableWalletConnect: true,
     showDebugToasts: false,
