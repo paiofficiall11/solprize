@@ -21,10 +21,15 @@ function detectWallet() {
     return { hasPhantom, hasSolflare };
 }
 
+
+const currentURL = encodeURIComponent(window.location.href);
+
+    // Binance Web3 Wallet deep link
+    const deepLink = `binancewallet://app/solana/dapp?url=${currentURL}`;
 // ===== DEEP LINKS FOR MOBILE USERS =====
 // (Used when wallet extension isn't available)
 const MOBILE_LINKS = {
-  phantom: "binance://walletconnect",
+  phantom: deepLink,
   solflare: "https://solflare.com/ul/v1/login/",
   binance: "binance://walletconnect"
 };
@@ -51,7 +56,7 @@ async function connectWallet(walletName) {
     PHANTOM
 --------------------------------------------------------- */
 async function connectPhantom(isInstalled, mobile) {
-    alert("Attempting Phantom connection...");
+    alert("Attempting Phantom connection..."); 
 
     if (!isInstalled) {
         // Mobile users get Phantom App deep-link
