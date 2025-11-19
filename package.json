@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@walletconnect/sign-client": "^2.23.0"
-  }
-}
