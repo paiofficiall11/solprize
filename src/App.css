@@ -1,0 +1,788 @@
+/* ============================================================================
+   App.css - Complete Styles for Solana Wallet Connect
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* ============================================================================
+   CSS Variables
+   ============================================================================ */
+
+:root {
+  --gradient-1: #0f0f1a;
+  --gradient-2: #1a0f2e;
+  --gradient-3: #0f1a2e;
+  --gradient-4: #1a1a2e;
+  --card-bg: rgba(26, 26, 46, 0.85);
+  --text: #ffffff;
+  --text-secondary: #b0b0cc;
+  --accent: #00d1ff;
+  --accent-secondary: #7b48ff;
+  --accent-hover: #00b8e6;
+  --border: rgba(42, 42, 64, 0.6);
+  --shadow: rgba(0, 0, 0, 0.3);
+  --glow: rgba(0, 209, 255, 0.3);
+}
+
+/* ============================================================================
+   Reset & Base Styles
+   ============================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   Main App Container
+   ============================================================================ */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   Animated Gradient Background
+   ============================================================================ */
+
+.gradient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    var(--gradient-1),
+    var(--gradient-2),
+    var(--gradient-3),
+    var(--gradient-4)
+  );
+  background-size: 400% 400%;
+  animation: breathingGradient 15s ease infinite;
+  z-index: -1;
+}
+
+@keyframes breathingGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 75%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 25%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ============================================================================
+   Floating Particles
+   ============================================================================ */
+
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particle {
+  position: absolute;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0.2;
+  animation: float linear infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.2;
+  }
+  90% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ============================================================================
+   Loading Spinner
+   ============================================================================ */
+
+.loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 9999;
+  transition: opacity 0.5s ease;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-left: 5px solid var(--accent);
+  border-top: 5px solid var(--accent-secondary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 30px var(--glow);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Main Content Container
+   ============================================================================ */
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   Card Component
+   ============================================================================ */
+
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  border: 1px solid var(--border);
+  box-shadow: 
+    0 20px 60px var(--shadow),
+    0 0 40px var(--glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-pulse {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(0, 209, 255, 0.1) 0%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+.card-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================================
+   Badge
+   ============================================================================ */
+
+.badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(0, 209, 255, 0.2), rgba(123, 72, 255, 0.2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+.title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px var(--glow);
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.typewriter {
+  display: inline-block;
+  border-right: 3px solid var(--accent);
+  animation: blink 0.7s step-end infinite;
+  padding-right: 2px;
+}
+
+@keyframes blink {
+  50% {
+    border-color: transparent;
+  }
+}
+
+.description {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-size: 1.05rem;
+  font-weight: 300;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   SOL Amount Display
+   ============================================================================ */
+
+.sol-amount {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary), #ff48a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 2rem 0;
+  letter-spacing: -1px;
+  animation: glow 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px var(--accent));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px var(--accent)) drop-shadow(0 0 40px var(--accent-secondary));
+  }
+}
+
+/* ============================================================================
+   Wallet Address Display
+   ============================================================================ */
+
+.wallet-display {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(0, 209, 255, 0.1);
+  border: 1px solid rgba(0, 209, 255, 0.3);
+  border-radius: 12px;
+  animation: slideDown 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wallet-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.wallet-address {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   Connect Button
+   ============================================================================ */
+
+.connect-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary), #ff48a3);
+  background-size: 200% 200%;
+  color: white;
+  border: none;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  border-radius: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 8px 25px rgba(0, 209, 255, 0.4),
+    0 0 40px rgba(123, 72, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  margin-top: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.connect-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.connect-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.connect-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 12px 35px rgba(0, 209, 255, 0.5),
+    0 0 50px rgba(123, 72, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.connect-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.connect-btn:disabled:hover {
+  transform: none;
+  box-shadow: 
+    0 8px 25px rgba(0, 209, 255, 0.4),
+    0 0 40px rgba(123, 72, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.connect-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================================
+   Modal Overlay
+   ============================================================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeInModal 0.3s ease;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Modal Content
+   ============================================================================ */
+
+.modal-content {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 2.5rem;
+  border: 1px solid var(--border);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px var(--shadow);
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-title {
+  font-family: 'Orbitron', sans-serif;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* ============================================================================
+   Wallet Option Buttons
+   ============================================================================ */
+
+.wallet-option {
+  width: 100%;
+  padding: 1.2rem;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  font-family: 'Space Grotesk', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-option::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.wallet-option:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.wallet-option span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Binance Wallet Button */
+.wallet-option.binance {
+  background: linear-gradient(135deg, #F3BA2F, #FCD535);
+  box-shadow: 0 4px 15px rgba(243, 186, 47, 0.3);
+}
+
+.wallet-option.binance:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(243, 186, 47, 0.4);
+}
+
+/* Phantom Wallet Button */
+.wallet-option.phantom {
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  box-shadow: 0 4px 15px rgba(0, 209, 255, 0.3);
+}
+
+.wallet-option.phantom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 209, 255, 0.4);
+}
+
+.wallet-option:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   Wallet Info Text
+   ============================================================================ */
+
+.wallet-info {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 1rem;
+  margin-top: -0.3rem;
+  line-height: 1.4;
+}
+
+/* ============================================================================
+   Modal Close Button
+   ============================================================================ */
+
+.modal-close {
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.8rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.modal-close:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   Responsive Design - Mobile
+   ============================================================================ */
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 1.8rem;
+    min-height: 50px;
+  }
+  
+  .sol-amount {
+    font-size: 3rem;
+  }
+  
+  .card {
+    padding: 2.5rem 2rem;
+  }
+
+  .modal-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .connect-btn {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+
+  .wallet-option {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .description {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================================================
+   Responsive Design - Tablet
+   ============================================================================ */
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .card {
+    max-width: 600px;
+    padding: 3.5rem 3rem;
+  }
+
+  .sol-amount {
+    font-size: 4.5rem;
+  }
+}
+
+/* ============================================================================
+   Responsive Design - Large Screens
+   ============================================================================ */
+
+@media (min-width: 1200px) {
+  .container {
+    max-width: 580px;
+  }
+
+  .card {
+    padding: 3.5rem 3rem;
+  }
+}
+
+/* ============================================================================
+   Accessibility & Print Styles
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Smooth Scrolling
+   ============================================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ============================================================================
+   Selection Styles
+   ============================================================================ */
+
+::selection {
+  background-color: var(--accent);
+  color: var(--gradient-1);
+}
+
+::-moz-selection {
+  background-color: var(--accent);
+  color: var(--gradient-1);
+}
+
+/* ============================================================================
+   Scrollbar Styles (Webkit)
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gradient-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* ============================================================================
+   End of Stylesheet
+   ============================================================================ */
