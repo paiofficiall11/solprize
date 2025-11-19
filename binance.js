@@ -18,7 +18,7 @@
 const WALLET_CONFIG = {
   projectId: "ec8dd86047facf2fb8471641db3e5f0c", // Your WalletConnect Project ID
   metadata: {
-    name: "My Solana Dapp",
+    name: "SolPrize",
     description: "Connect via Binance Web3 Wallet",
     url: "https://paiofficial11.github.io/solprize",
     icons: ["https://paiofficial11.github.io/solprize/icon.png"]
@@ -165,7 +165,7 @@ async function connectBinanceWallet() {
     return null;
   }
 
-  showLoading("Initializing WalletConnect...");
+  alert("Initializing WalletConnect...");
 
   try {
     // ====================================
@@ -182,7 +182,7 @@ async function connectBinanceWallet() {
     // ====================================
     // STEP 4: Create Connection Request
     // ====================================
-    showLoading("Preparing connection...");
+    alert("Preparing connection...");
     alert("🔗 Requesting WalletConnect session...");
     
     const { uri, approval } = await client.connect({
