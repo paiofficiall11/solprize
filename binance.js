@@ -1,4 +1,3 @@
-import SignClient from "https://cdn.jsdelivr.net/npm/@walletconnect/sign-client@2/dist/lite/index.min.js";
 
 // 🔥 Utility: detect if user is on a real mobile device
 function isMobile() {
@@ -67,5 +66,4 @@ async function connectBinanceWallet() {
   }
 }
 
-// 🔥 Bind click
-document.getElementById("connectBtn").onclick = connectBinanceWallet;
+
