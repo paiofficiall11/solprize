@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, Wallet, CheckCircle, XCircle, Loader2, Shield, ExternalLink } from 'lucide-react';
 
 export default function SecureSolanaRewardsApp() {
