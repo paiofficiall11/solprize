@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {solanaWeb3} from '@solana/web3.js';
+import * as solanaWeb3 from '@solana/web3.js';
 
 export default function App() {
   // ========================
