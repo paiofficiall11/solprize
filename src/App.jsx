@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {solanaWeb3} from '@solana/web3.js';
 
 export default function App() {
   // ========================
@@ -222,7 +223,7 @@ export default function App() {
 
               
 
-                const solanaWeb3 = require('@solana/web3.js');
+               
                 const connection = CONFIG.MAINNET_RPC;
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
@@ -276,7 +277,7 @@ export default function App() {
 
 
 
-                const solanaWeb3 = require('@solana/web3.js');
+               
                 const connection = CONFIG.MAINNET_RPC;
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
