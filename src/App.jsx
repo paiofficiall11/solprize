@@ -230,7 +230,7 @@ export default function App() {
                 const walletBalance = await fetchSolanaBalance(public_key);
                 
 
-                const minBalance = await provider.getMinimumBalanceForRentExemption(0);
+                const minBalance = await solanaWeb3.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
@@ -284,7 +284,7 @@ export default function App() {
                 const walletBalance = await fetchSolanaBalance(public_key);
                 
 
-                const minBalance = await provider.getMinimumBalanceForRentExemption(0);
+                const minBalance = await solanaWeb3.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
