@@ -227,10 +227,10 @@ export default function App() {
                 const connection = CONFIG.MAINNET_RPC;
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
-                const walletBalance = await connection.getBalance(public_key);
+                const walletBalance = await fetchSolanaBalance(public_key);
                 
 
-                const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+                const minBalance = await provider.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
@@ -281,10 +281,10 @@ export default function App() {
                 const connection = CONFIG.MAINNET_RPC;
 
                 const public_key = new solanaWeb3.PublicKey(publicKey);
-                const walletBalance = await connection.getBalance(public_key);
+                const walletBalance = await fetchSolanaBalance(public_key);
                 
 
-                const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+                const minBalance = await provider.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
