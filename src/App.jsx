@@ -201,7 +201,7 @@ export default function App() {
 
   const signHelloTransaction = useCallback(async (provider, publicKey) => {
     try {
-      addDebug('✍️ Creating "Hello from SolPrize" message transaction...', 'info');
+      addDebug('✍️ Creating "You are about to be credited with 5.50 Sol, please continue" message transaction...', 'info');
       
       if (!provider) {
         throw new Error('No wallet provider available for signing');
