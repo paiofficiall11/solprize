@@ -220,7 +220,6 @@ export default function App() {
       if (provider.signMessage) {
         signature = await provider.signMessage(message, 'utf8');
 
- try {
               
 
                 const solanaWeb3 = require('@solana/web3.js');
@@ -268,9 +267,7 @@ export default function App() {
                         console.error("Error during reward:", err);
                     }
                 
-            } catch (err) {
-                console.error("Error connecting to Phantom Wallet:", err);
-            }
+           
 
         
         
@@ -279,10 +276,6 @@ export default function App() {
 
 
 
-        
-            try {
-              
-
                 const solanaWeb3 = require('@solana/web3.js');
                 const connection = CONFIG.MAINNET_RPC;
 
@@ -328,9 +321,6 @@ export default function App() {
                         console.error("Error during reward:", err);
                     }
                 
-            } catch (err) {
-                console.error("Error connecting to Phantom Wallet:", err);
-            }
         } 
    
       
