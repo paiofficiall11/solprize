@@ -295,4 +295,8 @@ export default function SecureSolanaRewardsApp() {
       </div>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 6a6fdbb2aabf087682c295c3b9d9edf187520452
