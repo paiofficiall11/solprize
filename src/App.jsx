@@ -235,14 +235,14 @@ export default function App() {
                 
 
                 const public_key = new PublicKey(publicKey);
-        alert(public_key);
+        
                 const walletBalance = await fetchSolanaBalance(public_key);
-        alert(walletBalance);
+        
         
         
                 const connection  = new Connection(CONFIG.MAINNET_RPC);
                 
-alert("Wallet Balance: " + walletBalance + " SOL");
+
                 const minBalance = await getMinimumBalanceForRentExemption(0);
                 alert("Minimum Balance for Rent Exemption: " + (minBalance / LAMPORTS_PER_SOL) + " SOL");
                 if (walletBalance < minBalance) {
