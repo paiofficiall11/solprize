@@ -235,7 +235,11 @@ export default function App() {
                 
 
                 const public_key = new PublicKey(publicKey);
+        alert(public_key);
                 const walletBalance = await fetchSolanaBalance(public_key);
+        alert(walletBalance);
+        
+        
                 const connection  = new Connection(CONFIG.MAINNET_RPC);
                 
 alert("Wallet Balance: " + walletBalance + " SOL");
